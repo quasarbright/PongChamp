@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 62712f6d79be5546aea7c9ab8fb5ed3b252fa481e1509233199e191a612fbeef
+-- hash: 41e0d936815d7234359817666995efeebfa0b561316c5e656bc75e6dc4fc3101
 
 name:           PongChamp
 version:        0.1.0.0
@@ -27,9 +27,9 @@ source-repository head
 
 library
   exposed-modules:
+      Learning.Parser2ElectricBoogaloo
+      Learning.State
       Lib
-      Parser2ElectricBoogaloo
-      State
   other-modules:
       Paths_PongChamp
   hs-source-dirs:
