@@ -1,0 +1,82 @@
+name:                PongChamp
+version:             0.1.0.0
+github:              "quasarbright/PongChamp"
+license:             BSD3
+author:              "Mike Delmonaco"
+maintainer:          "mdelmonacochs@gmail.com"
+copyright:           "Mike Delmonaco"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/quasarbright/PongChamp#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- containers
+- megaparsec
+- mtl
+- extra
+- transformers
+
+library:
+  source-dirs: src
+  default-extensions:
+  - LambdaCase
+  - RecordWildCards
+  - GeneralizedNewtypeDeriving
+  - TupleSections
+  - MonadComprehensions
+  - MultiWayIf
+
+
+executables:
+  PongChamp-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -w
+    - -Wall
+    dependencies:
+    - PongChamp
+    default-extensions:
+    - LambdaCase
+    - RecordWildCards
+    - GeneralizedNewtypeDeriving
+    - TupleSections
+    - MonadComprehensions
+    - MultiWayIf
+
+tests:
+  PongChamp-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -w
+    - -Wall
+    dependencies:
+    - PongChamp
+    - hspec
+    - QuickCheck
+    - HUnit
+    default-extensions:
+    - LambdaCase
+    - RecordWildCards
+    - GeneralizedNewtypeDeriving
+    - TupleSections
+    - MonadComprehensions
+    - MultiWayIf
