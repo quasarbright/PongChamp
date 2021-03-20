@@ -35,6 +35,10 @@ satisfies pred = Parser $ \case
 char :: Char -> Parser ()
 char c = void $ satisfies (==c)
 
+voidParser :: Parser ()
+voidParser = do
+    return ()
+
 oneOf :: [Char] -> Parser Char
 oneOf chars = satisfies (`elem` chars)
 
