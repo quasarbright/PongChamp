@@ -1,4 +1,4 @@
-module State where
+module Learning.State where
 
 import Control.Applicative ( Applicative(liftA2) )
 import Control.Arrow ( Arrow(second) )

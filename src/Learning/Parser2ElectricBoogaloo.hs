@@ -1,4 +1,4 @@
-module Parser2ElectricBoogaloo where
+module Learning.Parser2ElectricBoogaloo where
 
 import Control.Applicative ( Applicative(liftA2) )
 import Control.Monad ( void )
