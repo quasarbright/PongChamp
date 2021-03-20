@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3de13cb4b91b7dc93b3975843eac6081b115507364d2723e46f5c1ebb9b8b3e6
+-- hash: 692adab5f96b53d5dec1735f02ca3e3827e1e00e7e40524da205531a2cfff0ca
 
 name:           PongChamp
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      AST
       Lib
   other-modules:
       Paths_PongChamp
