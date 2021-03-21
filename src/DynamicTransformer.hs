@@ -108,7 +108,7 @@ transformStatements (s_:rest) =
             appendRest (Eval e')
         Function f args body -> do
             f' <- newVar
-            args' <- mapM envLookup args
+            args' <- replicateM (length args) newVar
             let funenv = [(f, f')]
                 argsenv = zip args args'
             body' <- withVars (funenv ++ argsenv) (transformStatements body)
