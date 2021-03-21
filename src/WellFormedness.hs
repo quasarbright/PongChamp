@@ -7,6 +7,7 @@ import qualified Data.Set as Set
 import AST
 import Data.Maybe (fromMaybe)
 import Control.Arrow
+import Control.Monad.Extra
 
 data Context = Context{isInFunction :: Bool, isInLoop :: Bool} deriving(Eq, Ord, Show)
 
@@ -40,6 +41,9 @@ askVars = asks fst
 
 askContext :: Checker Context
 askContext = asks snd
+
+asksContext :: (Context -> a) -> Checker a
+asksContext f = asks (f . snd)
 
 localVars :: (Set String -> Set String) -> Checker a -> Checker a
 localVars f = local (first f)
@@ -92,9 +96,14 @@ wfStatements (s_:rest) =
             checkDups :: [String] -> Checker ()
             checkDups [] = nothing
             checkDups (x:xs) = when (x `elem` xs) (throw (DupVar x)) >> checkDups xs
-    Return e -> wfExpr e >> mRest
-    Break -> undefined 
-    _ -> undefined 
+    Return e -> do
+        unlessM (asksContext isInFunction) (throw BadReturn)
+        wfExpr e
+        mRest
+    Break -> do
+        unlessM (asksContext isInLoop) (throw BadBreak) 
+    Continue -> do
+        unlessM (asksContext isInLoop) (throw BadContinue)
 
 wfProgram :: Program -> Checker ()
 wfProgram (Program stmts) = wfStatements stmts
