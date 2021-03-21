@@ -174,14 +174,15 @@ runFunctionBody body = runStatements body >>= \case
     Normal -> return CNone
 
 runStatements :: [Statement] -> Interpreter Result
-runStatements [] = return Normal
-runStatements (s_:rest) =
-    let mRest = runStatements rest
-    in case s_ of
-        While cnd body -> do
-            evalExpr cnd >>= \case
-                CBool True -> do
-                    rbody <- runStatements body
+runStatements = undefined 
+-- runStatements [] = return Normal
+-- runStatements (s_:rest) =
+--     let mRest = runStatements rest
+--     in case s_ of
+--         While cnd body -> do
+--             evalExpr cnd >>= \case
+--                 CBool True -> do
+--                     rbody <- runStatements body
 
 
 {-
@@ -221,16 +222,16 @@ also you need to add let to declare
 
 -}
 
-State (Map String Cell)
+-- State (Map String Cell)
 
-top.x = 2
-function top.f() {
-    let top.f.x = top.x + 1
-    return top.f.x
-}
-x = 30
-z = 3
-y = f()
+-- top.x = 2
+-- function top.f() {
+--     let top.f.x = top.x + 1
+--     return top.f.x
+-- }
+-- x = 30
+-- z = 3
+-- y = f()
 
 runProgram :: Program -> Interpreter ()
 runProgram = undefined
