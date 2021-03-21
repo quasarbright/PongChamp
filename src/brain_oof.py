@@ -6,4 +6,5 @@ def f(x):
 	return g
 
 g = f(2)
-h = f(20)
+
+val = g()
