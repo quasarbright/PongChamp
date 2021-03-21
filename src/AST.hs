@@ -5,9 +5,13 @@ newtype Program = Program [Statement] deriving(Eq, Ord, Show)
 data Statement
     = While Expr [Statement]
     | If Expr [Statement] (Maybe [Statement])
+    | Let String (Maybe Expr)
     | Assign String Expr
     | Eval Expr
     | Function String [String] [Statement]
+    | Return Expr
+    | Break
+    | Continue
     deriving(Eq, Ord, Show)
 
 data Binop = Plus | Minus | Times | FloorDiv | Or | And | Eq | Neq | Lt | Le | Gt | Ge deriving(Eq, Ord, Show)
