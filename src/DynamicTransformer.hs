@@ -110,7 +110,8 @@ transformStatements (s_:rest) =
             let funenv = [(f, f')]
                 argsenv = zip args args'
             body' <- withVars (funenv ++ argsenv) (transformStatements body)
-            appendRest  (Function f' args' body')
+            rest' <- withVar f f' mRest
+            return (Function f' args' body':rest')
         Return e -> do
             e' <- transformExpr e
             appendRest (Return e')
