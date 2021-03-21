@@ -26,10 +26,10 @@ instance Monad Parser where
         Right (s', a) -> runParser (a2pb a) s'
 
 satisfies :: (Char -> Bool) -> Parser Char
-satisfies pred = Parser $ \case
+satisfies predicate = Parser $ \case
     "" -> Left "Expected char"
     c:s
-        | pred c -> return (s, c)
+        | predicate c -> return (s, c)
         | otherwise -> Left "Unexpected char"
 
 char :: Char -> Parser ()
@@ -51,10 +51,10 @@ nat = read <$> some digit
 optional:: Parser a -> Parser (Maybe a)
 optional pa = Parser $ \s -> case runParser pa s of
     Left _ -> return (s, Nothing)
-    Right (s', a) -> return (s, Just a)
+    Right (s', a) -> return (s', Just a)
 
 throw :: String -> Parser a
-throw err = Parser $ \s -> Left err
+throw err = Parser $ \_ -> Left err
 
 many :: Parser a -> Parser [a]
 many pa = do

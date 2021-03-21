@@ -2,7 +2,7 @@ module ParseUtils where
 
 import Control.Applicative hiding (many, some)
 import Control.Monad (void)
-import Data.Char (isLower, isUpper, isAlphaNum, isAlpha, isNumber)
+import Data.Char (isAlpha)
 import Data.Void
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -120,11 +120,17 @@ braces = between (symbol "{") (symbol "}")
 -- | copied from the parsec package:
 -- https://hackage.haskell.org/package/parsec-3.1.14.0/docs/src/Text.Parsec.Combinator.html#chainl1
 chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
-chainl1 p op = do x <- p; rest x
+chainl1 p op = do x <- p; rest x <|> return x
   where
-    rest x =
-      (do
-        f <- op
-        y <- p
-        rest (f x y))
-        <|> return x
+    rest x = do
+      f <- op
+      y <- p
+      rest (f x y)
+
+chainr1 :: Parser a -> Parser (a -> a -> a) -> Parser a
+chainr1 p op = do a <- p; rest a <|> return a
+  where
+    rest a = do
+      f <- op
+      a' <- chainr1 p op
+      return (f a a')

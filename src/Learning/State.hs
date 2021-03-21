@@ -1,8 +1,6 @@
 module Learning.State where
 
 import Control.Applicative ( Applicative(liftA2) )
-import Control.Arrow ( Arrow(second) )
-import Control.Monad ( join )
 import Control.Monad.Trans (MonadTrans(lift))
 import Control.Monad.Identity
 
