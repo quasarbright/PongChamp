@@ -10,8 +10,6 @@ import Control.Monad.Identity
 
 type Env = Map String String -- map of old variable names to new
 
-data Value = Closure Env [String] [Statement]
-
 type Store = Int
 
 data TransformerError
