@@ -73,6 +73,8 @@ pBool = choice [ symbol "true" $> Bool True
 parseExpr :: String -> Either (ParseErrorBundle String Void) Expr
 parseExpr = runParser pExpr ""
 
+-- statements --
+
 -- pUnop = do
 --     symbol "!" 
 --     return Unop <$> (String <$> op)
