@@ -60,10 +60,9 @@ while (True) {
         initY = 0;
     }
 }
-
 ```
 
-## Adding a  - template
+## Adding a Feature - template
 
 * High level - what should the feature do?
 
