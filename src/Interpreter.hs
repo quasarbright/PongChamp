@@ -16,6 +16,7 @@ data Cell =
     | CNone
     deriving(Eq, Ord, Show)
 
+-- closed env contains the names which were in scope at the time of the function's creation and their slots. This will include the function itself, for recursion
 data Value = Closure Env [String] [Statement]
 -- CFunction FunPtr
 
@@ -131,10 +132,13 @@ deref addr = do
         Just v -> return v
 
 
-withVar :: String -> Cell -> Interpreter a -> Interpreter a
-withVar x c m = do
-    si <- salloc c
-    local (Map.insert x si) m
+withVar :: String -> Int -> Interpreter a -> Interpreter a
+withVar x si = local (Map.insert x si)
+
+assignVar :: String -> Cell -> Interpreter ()
+assignVar x c = do
+    si <- symLookup_ x
+    modifyStack (Map.insert si c)
 
 withVars :: [(String, Cell)] -> Interpreter a -> Interpreter a
 withVars pairs m = do
@@ -152,6 +156,13 @@ stackLookup i = do
     case Map.lookup i stack of
         Nothing -> throwError BadDeref
         Just c -> return c
+
+symLookup_ :: String -> Interpreter Int
+symLookup_ x = do
+    env <- ask
+    case Map.lookup x env of
+        Nothing -> throwError (UnboundVar x)
+        Just slot -> return slot
 
 symLookup :: String -> Interpreter Cell
 symLookup x = do
