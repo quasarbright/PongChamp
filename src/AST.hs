@@ -7,7 +7,7 @@ data Statement
     | If Expr [Statement] (Maybe [Statement])
     | Assign String Expr
     | Eval Expr
-    | Function [String] [Statement]
+    | Function String [String] [Statement]
     deriving(Eq, Ord, Show)
 
 data Binop = Plus | Minus | Times | FloorDiv | Or | And | Eq | Neq | Lt | Le | Gt | Ge deriving(Eq, Ord, Show)

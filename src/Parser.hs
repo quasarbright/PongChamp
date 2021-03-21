@@ -5,12 +5,15 @@ import AST
 import qualified Text.Megaparsec.Char.Lexer as L
 import Text.Megaparsec.Expr
 import Control.Applicative (Alternative(many, (<|>)))
-import Text.Megaparsec (choice, sepBy, parseTest, runParser)
+import Text.Megaparsec hiding (many)
 import Data.Functor (($>))
 import Data.List (foldl')
 import Text.Megaparsec.Char (char)
 import Text.Megaparsec.Error (ParseErrorBundle)
 import Data.Void
+import Control.Applicative (optional)
+
+-- expr --
 
 pExpr :: Parser Expr
 pExpr = pBinop
@@ -57,11 +60,6 @@ pVar = Var <$> identifier -- String -> Expr, Parser String, create Parser Expr
 pNum :: Parser Expr
 pNum = Number <$> lexeme L.decimal
 
-manyTill :: Alternative m => m a -> m end -> m [a]
-manyTill p end = go
-  where
-    go = ([] <$ end) <|> ((:) <$> p <*> go)
-
 pString :: Parser Expr 
 pString = String <$> (char '\"' *> manyTill L.charLiteral (char '\"'))
 
@@ -75,6 +73,55 @@ parseExpr = runParser pExpr ""
 
 -- statements --
 
--- pUnop = do
---     symbol "!" 
---     return Unop <$> (String <$> op)
+pStatement :: Parser Statement 
+pStatement = choice [pWhile, pIf, pFunction, try pAssign, try pEval]
+
+pBlock :: Parser [Statement]
+pBlock = braces (many pStatement) <|> fmap (:[]) pStatement
+
+pWhile :: Parser Statement 
+pWhile = do
+    pKeyword "while"
+    cond <- parens pExpr
+    body <- pBlock
+    return $ While cond body
+
+pIf :: Parser Statement 
+pIf = do
+    pKeyword "if"
+    cond <- parens pExpr
+    thn <- pBlock
+    mEls <- optional (pKeyword "else" *> pBlock)
+    return $ If cond thn mEls
+
+
+pFunction :: Parser Statement 
+pFunction = do
+    pKeyword "function"
+    f <- identifier
+    args <- parens (identifier `sepBy` symbol ",")
+    body <- pBlock
+    return $ Function f args body
+
+pAssign :: Parser Statement 
+pAssign = do
+    x <- identifier 
+    symbol "="
+    rhs <- pExpr
+    symbol ";"
+    return $ Assign x rhs
+
+pEval :: Parser Statement 
+pEval = Eval <$> pExpr <* symbol ";"
+
+parseStatement :: String -> Either (ParseErrorBundle String Void) Statement
+parseStatement = runParser pStatement ""
+
+-- program --
+
+pProgram :: Parser Program
+pProgram  = Program <$> many pStatement
+
+-- | name then source
+parseProgram :: String -> String -> Either (ParseErrorBundle String Void) Statement
+parseProgram = runParser pStatement
