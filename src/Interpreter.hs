@@ -1,13 +1,12 @@
 module Interpreter where
 
 import Control.Monad.Except
-import Control.Monad.RWS.Strict
 -- import GameEngine
 import Data.Map(Map)
 import qualified Data.Map as Map
 import AST
-
-type Env = Map String Cell
+import Control.Monad.RWS.Strict
+import Control.Arrow
 
 data Cell = 
     CNumber Int
@@ -20,7 +19,15 @@ data Cell =
 data Value = Closure Env [String] [Statement]
 -- CFunction FunPtr
 
-type Store = Map Int Value
+
+type SymTable = Map String Int -- varname -> stack slot index
+
+type Stack = Map Int Cell -- stack slot index -> Cell
+type Heap = Map Int Value -- pointer addr -> Value
+
+type Env = SymTable
+type Store = (Stack, Heap)
+
 data RuntimeError
     = UnboundVar String
     | BadDeref
@@ -50,9 +57,35 @@ newtype Interpreter a = Interpreter
         , MonadIO
         )
 
+getStack :: Interpreter Stack
+getStack = gets fst
+
+getsStack :: (Stack -> a) -> Interpreter a
+getsStack f = gets (f . fst)
+
+putStack :: Stack -> Interpreter ()
+putStack = modifyStack . const
+
+modifyStack :: (Stack -> Stack) -> Interpreter ()
+modifyStack = modify . first
+
+getHeap :: Interpreter Heap
+getHeap = gets snd
+
+getsHeap :: (Heap -> a) -> Interpreter a
+getsHeap f = gets (f . snd)
+
+putHeap :: Heap -> Interpreter ()
+putHeap = modifyHeap . const
+
+modifyHeap :: (Heap -> Heap) -> Interpreter ()
+modifyHeap = modify . second
+
+
+-- | new heap address. increments next available address
 newAddr :: Interpreter Int
 newAddr = do
-    heap <- get
+    heap <- getHeap
     let keys = Map.keys heap
     let maxKey = 
             case keys of
@@ -60,40 +93,72 @@ newAddr = do
                 _ -> maximum keys
     return (succ maxKey)
 
+-- | newAddr but for the stack. Gets the next stack slot and increments next available
+newSlot :: Interpreter Int
+newSlot = do
+    stack <- getStack
+    let keys = Map.keys stack
+    let maxKey = 
+            case keys of
+                [] -> 0
+                _ -> maximum keys
+    return (succ maxKey)
+
+-- | put value on the heap and return the address of it
 malloc :: Value -> Interpreter Int
 malloc v = do
     addr <- newAddr
-    modify (Map.insert addr v)
+    modifyHeap (Map.insert addr v)
     return addr
 
+-- | put cell on the stack and return stack slot of it
+salloc :: Cell -> Interpreter Int
+salloc c = do
+    si <- newSlot
+    modifyStack (Map.insert si c)
+    return si
+
+-- | put value on the heap and return a pointer to it
 malloc' :: Value -> Interpreter Cell
 malloc' v = CPointer <$> malloc v
 
+-- | get the value at addr on the heap
 deref :: Int -> Interpreter Value
 deref addr = do
-    heap <- get
+    heap <- getHeap
     case Map.lookup addr heap of
         Nothing -> throwError BadDeref
         Just v -> return v
 
+
 withVar :: String -> Cell -> Interpreter a -> Interpreter a
-withVar x c = local (Map.insert x c)
+withVar x c m = do
+    si <- salloc c
+    local (Map.insert x si) m
 
 withVars :: [(String, Cell)] -> Interpreter a -> Interpreter a
-withVars vars = local (Map.union (Map.fromList vars))
-
-withVars' :: Map String Cell -> Interpreter a -> Interpreter a
-withVars' vars = local (Map.union vars)
+withVars pairs m = do
+    let (vars, cells) = unzip pairs
+    sis <- mapM salloc cells
+    let stack' = zip vars sis
+    local (Map.union (Map.fromList stack')) m
 
 usingEnv :: Env -> Interpreter a -> Interpreter a
 usingEnv e = local (const e)
 
-stackLookup :: String -> Interpreter Cell
-stackLookup x = do
-    stack <- ask
-    case Map.lookup x stack of
-        Nothing -> throwError (UnboundVar x)
+stackLookup :: Int -> Interpreter Cell
+stackLookup i = do
+    stack <- getStack
+    case Map.lookup i stack of
+        Nothing -> throwError BadDeref
         Just c -> return c
+
+symLookup :: String -> Interpreter Cell
+symLookup x = do
+    env <- ask
+    case Map.lookup x env of
+        Nothing -> throwError (UnboundVar x)
+        Just slot -> stackLookup slot
 
 wrapArith :: (Int -> Int -> Int) -> Cell -> Cell -> Interpreter Cell
 wrapArith op l r = case (l,r) of
@@ -179,10 +244,11 @@ runStatements = undefined
 -- runStatements (s_:rest) =
 --     let mRest = runStatements rest
 --     in case s_ of
---         While cnd body -> do
---             evalExpr cnd >>= \case
---                 CBool True -> do
---                     rbody <- runStatements body
+--         Let x None -> 
+        -- While cnd body -> do
+        --     evalExpr cnd >>= \case
+        --         CBool True -> do
+        --             rbody <- runStatements body
 
 
 {-
