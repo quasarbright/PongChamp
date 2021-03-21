@@ -3,30 +3,43 @@ module Parser where
 import ParseUtils
 import AST
 import qualified Text.Megaparsec.Char.Lexer as L
-import Control.Applicative (Alternative(many))
-import Text.Megaparsec (choice, sepBy)
+import Text.Megaparsec.Expr
+import Control.Applicative (Alternative(many, (<|>)))
+import Text.Megaparsec (choice, sepBy, parseTest, runParser)
 import Data.Functor (($>))
 import Data.List (foldl')
+import Text.Megaparsec.Char (char)
+import Text.Megaparsec.Error (ParseErrorBundle)
+import Data.Void
 
 pExpr :: Parser Expr
-pExpr = undefined
+pExpr = pBinop
 
+binary :: String -> Binop -> Operator Parser Expr
+binary name op = InfixL $ do
+    symbol name
+    return $ \l r -> Binop op l r
 
-pVar :: Parser Expr
-pVar = Var <$> identifier -- String -> Expr, Parser String, create Parser Expr
+pBinop :: Parser Expr
+pBinop = makeExprParser pUnop table
+    where
+        table =
+            [ [binary "*" Times, binary "/" FloorDiv]
+            , [binary "+" Plus, binary "-" Minus]
+            , [binary "<" Lt, binary ">" Gt, binary "<=" Le, binary ">=" Ge]
+            , [binary "==" Eq, binary "!=" Neq]
+            , [binary "&&" And, binary "||" Or]
+            ]
 
-pNum :: Parser Expr
-pNum = Number <$> L.decimal
+prefix :: String -> Unop -> Operator Parser Expr
+prefix  name op = Prefix $ do
+    symbol name
+    return $ \e -> Unop op e
 
-pString :: Parser Expr 
-pString = do
-    symbol "\""
-    String <$> (many L.charLiteral <* symbol "\"")
-
-pBool :: Parser Expr
-pBool = choice [ symbol "true" $> Bool True
-               , symbol "false" $> Bool False
-               ]
+pUnop :: Parser Expr
+pUnop = makeExprParser pCall table
+    where
+        table = [[prefix "!" Not]]
 
 pCall :: Parser Expr
 pCall = do
@@ -37,6 +50,28 @@ pCall = do
 
 pAtomic :: Parser Expr
 pAtomic = choice [pVar, pBool, pString, pNum, parens pExpr]
+
+pVar :: Parser Expr
+pVar = Var <$> identifier -- String -> Expr, Parser String, create Parser Expr
+
+pNum :: Parser Expr
+pNum = Number <$> lexeme L.decimal
+
+manyTill :: Alternative m => m a -> m end -> m [a]
+manyTill p end = go
+  where
+    go = ([] <$ end) <|> ((:) <$> p <*> go)
+
+pString :: Parser Expr 
+pString = String <$> (char '\"' *> manyTill L.charLiteral (char '\"'))
+
+pBool :: Parser Expr
+pBool = choice [ symbol "true" $> Bool True
+               , symbol "false" $> Bool False
+               ]
+
+parseExpr :: String -> Either (ParseErrorBundle String Void) Expr
+parseExpr = runParser pExpr ""
 
 -- pUnop = do
 --     symbol "!" 
