@@ -6,6 +6,7 @@ import Control.Monad.RWS.Strict
 import Data.Map(Map)
 import qualified Data.Map as Map
 import AST
+import Control.Monad.Identity
 
 type Env = Map String String -- map of old variable names to new
 
@@ -18,10 +19,11 @@ data TransformerError
     | BadDeref
     | TypeError String
     | ArityError String
+    deriving(Show)
 
 newtype Transformer a = Transformer
     {
-        runTransformer :: (RWST Env () Store (ExceptT TransformerError IO)) a
+        runTransformer :: (RWST Env () Store (ExceptT TransformerError Identity)) a
     }
     deriving
         ( Functor
@@ -30,7 +32,6 @@ newtype Transformer a = Transformer
         , MonadError TransformerError
         , MonadState Store
         , MonadReader Env
-        , MonadIO
         )
 
 newVar :: Transformer String
@@ -118,12 +119,16 @@ transformStatements (s_:rest) =
         Break -> appendRest Break
         Continue -> appendRest Continue
 
-tfProgram :: Program -> Transformer [Statement]
-tfProgram (Program stmts) = transformStatements stmts
+tfProgram :: Program -> Transformer Program 
+tfProgram (Program stmts) = Program <$> transformStatements stmts
 
-evalTransformer :: Transformer a -> IO (Either TransformerError a)
-evalTransformer m = mio 
+transformProgram :: Program -> Either TransformerError Program
+transformProgram p = evalTransformer (tfProgram p)
+
+evalTransformer :: Transformer a -> Either TransformerError a
+evalTransformer m = ma 
     where
         mrws = runTransformer m
         me = fst <$> evalRWST mrws mempty 0
-        mio = runExceptT me
+        mi = runExceptT me
+        ma = runIdentity mi

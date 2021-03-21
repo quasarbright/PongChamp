@@ -2,9 +2,9 @@ name:                PongChamp
 version:             0.1.0.0
 github:              "quasarbright/PongChamp"
 license:             BSD3
-author:              "Mike Delmonaco"
-maintainer:          "mdelmonacochs@gmail.com"
-copyright:           "Mike Delmonaco"
+author:              "Mike Delmonaco & Ryan Mitchell"
+maintainer:          "mdelmonacochs@gmail.com & thermitchellman@gmail.com"
+copyright:           "Mike Delmonaco & Ryan Mitchell"
 
 extra-source-files:
 - README.md
