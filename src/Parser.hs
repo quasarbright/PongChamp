@@ -72,7 +72,7 @@ parseExpr = runParser pExpr ""
 -- statements --
 
 pStatement :: Parser Statement
-pStatement = choice [pWhile, pIf, pFunction, try pAssign, pEval]
+pStatement = choice [pWhile, pIf, pLet, pFunction, pReturn, pBreak, pContinue, try pAssign, pEval]
 
 pBlock :: Parser [Statement]
 pBlock = braces (many pStatement) <|> fmap (:[]) pStatement
@@ -92,6 +92,17 @@ pIf = do
     mEls <- optional (pKeyword "else" *> pBlock)
     return $ If cond thn mEls
 
+pLet :: Parser Statement
+pLet = do
+    pKeyword "let"
+    x <- identifier 
+    let pInit = do
+            symbol "="
+            rhs <- pExpr
+            symbol ";"
+            return rhs
+    mRhs <- fmap Just pInit <|> (symbol ";" $> Nothing)
+    return $ Let x mRhs
 
 pFunction :: Parser Statement
 pFunction = do
@@ -111,6 +122,19 @@ pAssign = do
 
 pEval :: Parser Statement
 pEval = Eval <$> pExpr <* symbol ";"
+
+pReturn :: Parser Statement
+pReturn = do
+    pKeyword "return"
+    e <- pExpr
+    symbol ";"
+    return $ Return e
+
+pBreak :: Parser Statement
+pBreak = pKeyword "break" >> symbol ";" $> Break 
+
+pContinue :: Parser Statement 
+pContinue = pKeyword "continue" >> symbol ";" $> Continue 
 
 parseStatement :: String -> Either (ParseErrorBundle String Void) Statement
 parseStatement = runParser pStatement ""
