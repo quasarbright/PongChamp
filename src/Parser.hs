@@ -4,14 +4,12 @@ import ParseUtils
 import AST
 import qualified Text.Megaparsec.Char.Lexer as L
 import Text.Megaparsec.Expr
-import Control.Applicative (Alternative(many, (<|>)))
+import Control.Applicative ( Alternative(many) )
 import Text.Megaparsec hiding (many)
 import Data.Functor (($>))
 import Data.List (foldl')
 import Text.Megaparsec.Char (char)
-import Text.Megaparsec.Error (ParseErrorBundle)
 import Data.Void
-import Control.Applicative (optional)
 
 -- expr --
 
@@ -60,7 +58,7 @@ pVar = Var <$> identifier -- String -> Expr, Parser String, create Parser Expr
 pNum :: Parser Expr
 pNum = Number <$> lexeme L.decimal
 
-pString :: Parser Expr 
+pString :: Parser Expr
 pString = String <$> (char '\"' *> manyTill L.charLiteral (char '\"'))
 
 pBool :: Parser Expr
@@ -73,20 +71,20 @@ parseExpr = runParser pExpr ""
 
 -- statements --
 
-pStatement :: Parser Statement 
-pStatement = choice [pWhile, pIf, pFunction, try pAssign, try pEval]
+pStatement :: Parser Statement
+pStatement = choice [pWhile, pIf, pFunction, try pAssign, pEval]
 
 pBlock :: Parser [Statement]
 pBlock = braces (many pStatement) <|> fmap (:[]) pStatement
 
-pWhile :: Parser Statement 
+pWhile :: Parser Statement
 pWhile = do
     pKeyword "while"
     cond <- parens pExpr
     body <- pBlock
     return $ While cond body
 
-pIf :: Parser Statement 
+pIf :: Parser Statement
 pIf = do
     pKeyword "if"
     cond <- parens pExpr
@@ -95,7 +93,7 @@ pIf = do
     return $ If cond thn mEls
 
 
-pFunction :: Parser Statement 
+pFunction :: Parser Statement
 pFunction = do
     pKeyword "function"
     f <- identifier
@@ -103,15 +101,15 @@ pFunction = do
     body <- pBlock
     return $ Function f args body
 
-pAssign :: Parser Statement 
+pAssign :: Parser Statement
 pAssign = do
-    x <- identifier 
+    x <- identifier
     symbol "="
     rhs <- pExpr
     symbol ";"
     return $ Assign x rhs
 
-pEval :: Parser Statement 
+pEval :: Parser Statement
 pEval = Eval <$> pExpr <* symbol ";"
 
 parseStatement :: String -> Either (ParseErrorBundle String Void) Statement
@@ -123,5 +121,5 @@ pProgram :: Parser Program
 pProgram  = Program <$> many pStatement
 
 -- | name then source
-parseProgram :: String -> String -> Either (ParseErrorBundle String Void) Statement
-parseProgram = runParser pStatement
+parseProgram :: String -> String -> Either (ParseErrorBundle String Void) Program 
+parseProgram = runParser pProgram
