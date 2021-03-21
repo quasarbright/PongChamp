@@ -189,12 +189,19 @@ CRISIS
 
 x = 2
 function f() {
-    let x = x + 1
     return x
 }
 x = 30
 z = 3
 y = f()
+
+function g() {
+    let x = 234234
+    return f()
+}
+
+
+
 
 
 we don't want f to see z, we want f to think x is 30 so it needs that mutation
