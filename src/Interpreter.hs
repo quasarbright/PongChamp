@@ -182,6 +182,8 @@ runStatements (s_:rest) =
             evalExpr cnd >>= \case
                 CBool True -> do
                     rbody <- runStatements body
+                    undefined 
+        _ -> undefined 
 
 
 {-
@@ -213,17 +215,6 @@ solution: tag everything to uniquify names and then use dynamic scope
 also you need to add let to declare
 
 -}
-
-State (Map String Cell)
-
-top.x = 2
-function top.f() {
-    let top.f.x = top.x + 1
-    return top.f.x
-}
-x = 30
-z = 3
-y = f()
 
 runProgram :: Program -> Interpreter ()
 runProgram = undefined
