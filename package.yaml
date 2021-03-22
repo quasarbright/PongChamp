@@ -49,7 +49,7 @@ executables:
     - -w
     - -Wall
     extra-lib-dirs:
-    - /home/savethefishes/Documents/PongChamp/lib
+    - ./lib
     extra-libraries:
     - acpp
     dependencies:
