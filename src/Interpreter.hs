@@ -120,12 +120,11 @@ toCInt = fromIntegral
 
 builtinGameEngine :: Value
 builtinGameEngine = Builtin $ \cs -> do
-    case cs of
+    engine <- case cs of
         [c1, c2] -> case (c1, c2) of
             (CNumber w, CNumber h) -> 
                 liftIO(do
-                    engine <- makeEngine (toCInt w) (toCInt h)
-                    return ()
+                    return $ makeEngine (toCInt w) (toCInt h)
                 )
             _ -> throwError (TypeError "game engine needs int width and height")  
         _ -> throwError (ArityError "game engine needs width and height")

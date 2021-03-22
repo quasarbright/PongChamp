@@ -11,10 +11,15 @@ typedef void *APtr; // dummy type.
 #endif
 
 enginePtr makeEngine(int w, int h);
-// void applyStateA(enginePtr engine, i2i arg);
-// int getStateA(enginePtr engine);
-// void setStateA(enginePtr engine, int arg);
-// void freeA(enginePtr engine);
+
+void clear(enginePtr ptr);
+
+void flip(enginePtr ptr);
+
+
+void delay(enginePtr ptr, int milliseconds);
+
+void DrawRectangle(enginePtr ptr, int x, int y, int w, int h);
 
 #ifdef __cplusplus
 }
