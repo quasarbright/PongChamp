@@ -4,4 +4,4 @@ while (n > 0) {
 	tmp = tmp * n;
 	n = n - 1;
 }
-return tmp;
+println(tmp);
