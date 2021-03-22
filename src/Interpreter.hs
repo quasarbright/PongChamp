@@ -95,10 +95,14 @@ printState = Builtin $ \_ -> do
         print (sortMap fst heap))
     return CNone
 
+input :: Value
+input = Builtin $ const $ CString <$> liftIO getLine
+
 stdLib :: [(String, Value)]
 stdLib =
     [ ("print", builtinPrint)
     , ("__printState__", printState)
+    , ("input", input)
     ]
 
 initialize :: Interpreter Env
