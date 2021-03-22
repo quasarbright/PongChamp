@@ -115,17 +115,20 @@ str = Builtin $ \case
 square :: CTypes.CInt -> CTypes.CInt
 square x = x * x
 
+toCInt :: Int -> CTypes.CInt 
+toCInt = fromIntegral
+
 builtinGameEngine :: Value
-builtinGameEngine = Builtin $ \_ -> do
-    liftIO(do
-            callback <- wrap square
-            a <- makeA 1234
-            setStateA a 1000
-            applyStateA a callback -- double
-            cur <- getStateA a
-            print cur
-            freeA a
-        )
+builtinGameEngine = Builtin $ \cs -> do
+    case cs of
+        [c1, c2] -> case (c1, c2) of
+            (CNumber w, CNumber h) -> 
+                liftIO(do
+                    engine <- makeEngine (toCInt w) (toCInt h)
+                    return ()
+                )
+            _ -> throwError (TypeError "game engine needs int width and height")  
+        _ -> throwError (ArityError "game engine needs width and height")
     return CNone
 
 stdLib :: [(String, Value)]

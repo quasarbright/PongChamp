@@ -51,7 +51,7 @@ executables:
     extra-lib-dirs:
     - ./lib
     extra-libraries:
-    - acpp
+    - engine
     dependencies:
     - PongChamp
     default-extensions:

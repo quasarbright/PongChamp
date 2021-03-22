@@ -3,7 +3,7 @@ DEBUG ?= no
 
 # standard params
 CXX = clang++
-INCLUDE = -Iinclude -Iinclude/component_system -Iinclude/resource_management -Iinclude/utils -I/usr/include/SDL2/
+INCLUDE = -Iengine/include -Iinclude/component_system -Iinclude/resource_management -Iinclude/utils -I/usr/include/SDL2/
 CXXFLAGS = -std=c++17 $(INCLUDE)
 
 LDFLAGS := 
@@ -15,16 +15,16 @@ ifneq ($(DEBUG), no)
 endif
 
 # src directories
-MAIN_SRC_DIR := engine
+MAIN_SRC_DIR := engine/src
 
 MAIN_OBJ_DIR := obj
 
 BIN_DIR := lib
 
-EXE = $(BIN_DIR)/libacpp.so
+EXE = $(BIN_DIR)/libengine.so
 
 # src file list
-MAIN_SRC = acpp.cpp acpp_capi.cpp
+MAIN_SRC = engine.cpp engine_capi.cpp
 
 MAIN_DPD = $(MAIN_SRC:%.cpp=$(MAIN_OBJ_DIR)/%.dpd)
 # set up object file list

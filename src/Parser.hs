@@ -50,7 +50,7 @@ pCall = do
     return $ foldl' Call f argss
 
 pAtomic :: Parser Expr
-pAtomic = choice [pVar, pBool, pString, pNum, parens pExpr]
+pAtomic = choice [pBool, pVar, pString, pNum, parens pExpr]
 
 pVar :: Parser Expr
 pVar = Var <$> identifier -- String -> Expr, Parser String, create Parser Expr

@@ -1,3 +1,11 @@
+need to:
+* fix errors, rung call-engine.js, errors not being thrown
+    * maybe check to see if importing c library is causing issue??
+* clean code
+* finish defining simple engine api
+* release PongChamp 0.1.0
+
+
 Program 
 [Function "$0" ["$1"]
     [Function "$2" [] 
