@@ -1,3 +1,13 @@
+Program 
+[Function "$0" ["$1"]
+    [Function "$2" [] 
+        [Assign "$1" (Binop Plus (Var "$1") (Number 1))
+        ,Return (Var "$1")]
+        ,Return (Var "$2")]
+,Let "$3" Nothing
+,Assign "$3" (Call (Var "$0") [Number 2])
+,Return (Call (Var "$3") [])]
+
 
 CRISIS
 
