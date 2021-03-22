@@ -10,5 +10,5 @@ function f(x) {
 let y = 77;
 let h = f(2);
 h();
-return h();
+println(h());
 // stack gets fucked in call. symtable is fine

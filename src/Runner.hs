@@ -2,6 +2,8 @@ module Runner where
 
 import Parser
 import Interpreter
+import WellFormedness
+import Control.Monad
 
 swallow :: Show err => Either err a -> a
 swallow = \case
@@ -13,12 +15,16 @@ swallows = \case
     Left err -> errorWithoutStackTrace err
     Right a -> a
 
-runString :: String -> String -> IO Result
+runString :: String -> String -> IO ()
 runString name src = do
     let parsed = swallows (parseProgram name src)
-    swallow <$> interpretProgram parsed
+        errs = checkProgram parsed
+    case errs of
+        [] -> void $ swallow <$> interpretProgram parsed
+        _ -> mapM_ print errs
+    
 
-runFile :: String -> IO Result 
+runFile :: String -> IO () 
 runFile file = do
     src <- readFile file
     runString file src

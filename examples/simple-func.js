@@ -1,7 +1,5 @@
 function f(x) {
-	print("inside");
-	__printState__();
+	println("inside");
 	return x;
 }
-__printState__();
-return f(1890);
+return f(2)

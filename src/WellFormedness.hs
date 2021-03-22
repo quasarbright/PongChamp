@@ -8,10 +8,14 @@ import AST
 import Data.Maybe (fromMaybe)
 import Control.Arrow
 import Control.Monad.Extra
+import Interpreter (stdLib)
 
 data Context = Context{isInFunction :: Bool, isInLoop :: Bool} deriving(Eq, Ord, Show)
 
 type Env = (Set String, Context)
+
+initialEnv :: Set String
+initialEnv = Set.fromList (fst <$> stdLib)
 
 data WFError
     = UnboundVar String
@@ -109,6 +113,6 @@ wfProgram :: Program -> Checker ()
 wfProgram (Program stmts) = wfStatements stmts
 
 checkProgram :: Program -> [WFError]
-checkProgram p = snd $ evalRWS (runChecker (wfProgram p)) (mempty, Context False False) ()
+checkProgram p = snd $ evalRWS (runChecker (wfProgram p)) (initialEnv, Context False False) ()
 
 

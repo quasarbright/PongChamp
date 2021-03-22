@@ -11,4 +11,4 @@ function fac(x) {
 	}
 }
 
-return fac(4);
+println(fac(4));
