@@ -1,4 +1,5 @@
-print("what is your name?");
+print("what is your name? ");
 let s = input();
-print("hello,");
+println();
+print("hello, ");
 print(s);

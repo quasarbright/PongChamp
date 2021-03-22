@@ -10,6 +10,7 @@ import Control.Arrow
 import Data.Functor
 import Data.List (sortBy)
 import Data.Function
+import System.IO
 
 data Cell = 
     CNumber Int
@@ -69,14 +70,20 @@ newtype Interpreter a = Interpreter
         )
 
 
-builtinPrint :: Value
-builtinPrint = Builtin $ \cs -> mapM printSingle cs $> CNone
+builtinPrint_ :: [Cell] -> Interpreter Cell
+builtinPrint_ cs = mapM printSingle cs $> CNone
     where
         printSingle = \case
             CPointer addr -> do
                 v <- deref addr
-                liftIO (print v)
-            c -> liftIO (print c)
+                liftIO (putStr (show v) >> hFlush stdout)
+            c -> liftIO (putStr (show c) >> hFlush stdout)
+
+builtinPrint :: Value
+builtinPrint = Builtin builtinPrint_
+
+builtinPrintln :: Value
+builtinPrintln = Builtin $ \cs -> builtinPrint_ cs >> liftIO (putStrLn "") $> CNone
 
 sortMap :: Ord a1 => ((k, a2) -> a1) -> Map k a2 -> [(k, a2)]
 sortMap key m = m & Map.toList & sortBy (compare `on` key)
@@ -98,11 +105,18 @@ printState = Builtin $ \_ -> do
 input :: Value
 input = Builtin $ const $ CString <$> liftIO getLine
 
+str :: Value
+str = Builtin $ \case
+    [c] -> return (CString (show c)) -- TODO pretty
+    _ -> throwError (ArityError "str")
+
 stdLib :: [(String, Value)]
 stdLib =
-    [ ("print", builtinPrint)
+    [ ("println", builtinPrintln)
+    , ("print", builtinPrint)
     , ("__printState__", printState)
     , ("input", input)
+    , ("str", str)
     ]
 
 initialize :: Interpreter Env
