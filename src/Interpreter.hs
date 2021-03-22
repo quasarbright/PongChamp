@@ -11,6 +11,9 @@ import Data.Functor
 import Data.List (sortBy)
 import Data.Function
 import System.IO
+import GameEngine
+
+import qualified Foreign.C.Types as CTypes
 
 data Cell = 
     CNumber Int
@@ -109,6 +112,21 @@ str :: Value
 str = Builtin $ \case
     [c] -> return (CString (show c)) -- TODO pretty
     _ -> throwError (ArityError "str")
+square :: CTypes.CInt -> CTypes.CInt
+square x = x * x
+
+builtinGameEngine :: Value
+builtinGameEngine = Builtin $ \_ -> do
+    liftIO(do
+            callback <- wrap square
+            a <- makeA 1234
+            setStateA a 1000
+            applyStateA a callback -- double
+            cur <- getStateA a
+            print cur
+            freeA a
+        )
+    return CNone
 
 stdLib :: [(String, Value)]
 stdLib =
@@ -117,6 +135,7 @@ stdLib =
     , ("__printState__", printState)
     , ("input", input)
     , ("str", str)
+    , ("callEngine", builtinGameEngine)
     ]
 
 initialize :: Interpreter Env

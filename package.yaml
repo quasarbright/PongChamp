@@ -48,6 +48,10 @@ executables:
     - -with-rtsopts=-N
     - -w
     - -Wall
+    extra-lib-dirs:
+    - /home/savethefishes/Documents/PongChamp/lib
+    extra-libraries:
+    - acpp
     dependencies:
     - PongChamp
     default-extensions:
