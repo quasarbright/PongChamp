@@ -8,6 +8,8 @@ import AST
 import Control.Monad.RWS.Strict
 import Control.Arrow
 import Data.Functor
+import Data.List (sortBy)
+import Data.Function
 
 data Cell = 
     CNumber Int
@@ -18,9 +20,15 @@ data Cell =
     deriving(Eq, Ord, Show)
 
 -- closed env contains the names which were in scope at the time of the function's creation and their slots. This will include the function itself, for recursion
-data Value = Closure Env [String] [Statement] deriving(Eq, Ord, Show)
+data Value
+    = Closure String Env [String] [Statement]
+    | Builtin ([Cell] -> Interpreter Cell)
 -- CFunction FunPtr
 
+instance Show Value where
+    show = \case
+        Closure f env _ _ -> "<function>: "++f++" "++show env
+        Builtin{} -> "<builtin function>"
 
 type SymTable = Map String Int -- varname -> stack slot index
 
@@ -28,7 +36,7 @@ type Stack = Map Int Cell -- stack slot index -> Cell
 type Heap = Map Int Value -- pointer addr -> Value
 
 type Env = SymTable
-type Store = (Stack, Heap)
+type Store = (Stack, Heap, Int, Int)
 
 data RuntimeError
     = UnboundVar String
@@ -60,52 +68,86 @@ newtype Interpreter a = Interpreter
         , MonadIO
         )
 
+
+builtinPrint :: Value
+builtinPrint = Builtin $ \cs -> mapM printSingle cs $> CNone
+    where
+        printSingle = \case
+            CPointer addr -> do
+                v <- deref addr
+                liftIO (print v)
+            c -> liftIO (print c)
+
+sortMap :: Ord a1 => ((k, a2) -> a1) -> Map k a2 -> [(k, a2)]
+sortMap key m = m & Map.toList & sortBy (compare `on` key)
+
+printState :: Value
+printState = Builtin $ \_ -> do
+    stack <- getStack
+    heap <- getHeap
+    env <- ask
+    liftIO (do
+        putStrLn "symtable:"
+        print (sortMap snd env)
+        putStrLn "stack:"
+        print (sortMap fst stack)
+        putStrLn "heap:"
+        print (sortMap fst heap))
+    return CNone
+
+stdLib :: [(String, Value)]
+stdLib =
+    [ ("print", builtinPrint)
+    , ("__printState__", printState)
+    ]
+
+initialize :: Interpreter Env
+initialize = do
+    let help name value = do
+            ptr <- malloc' value
+            si <- salloc ptr
+            return (name,si)
+    env0 <- mapM (uncurry help) stdLib
+    return $ Map.fromList env0
+
 getStack :: Interpreter Stack
-getStack = gets fst
+getStack = gets (\(s,_,_,_) -> s)
 
 getsStack :: (Stack -> a) -> Interpreter a
-getsStack f = gets (f . fst)
+getsStack f = f <$> getStack
 
 putStack :: Stack -> Interpreter ()
 putStack = modifyStack . const
 
 modifyStack :: (Stack -> Stack) -> Interpreter ()
-modifyStack = modify . first
+modifyStack f = modify $ \(s,a,b,c) -> (f s,a,b,c)
 
 getHeap :: Interpreter Heap
-getHeap = gets snd
+getHeap = gets (\(_,h,_,_) -> h)
 
 getsHeap :: (Heap -> a) -> Interpreter a
-getsHeap f = gets (f . snd)
+getsHeap f = f <$> getHeap
 
 putHeap :: Heap -> Interpreter ()
 putHeap = modifyHeap . const
 
 modifyHeap :: (Heap -> Heap) -> Interpreter ()
-modifyHeap = modify . second
+modifyHeap f = modify $ \(a,h,b,c) -> (a,f h,b,c)
 
 
 -- | new heap address. increments next available address
 newAddr :: Interpreter Int
 newAddr = do
-    heap <- getHeap
-    let keys = Map.keys heap
-    let maxKey = 
-            case keys of
-                [] -> 0
-                _ -> maximum keys
-    return (succ maxKey)
+    (s,h,si,hi) <- get
+    put (s,h,si,succ hi)
+    return hi
 
 -- | newAddr but for the stack. Gets the next stack slot and increments next available
 newSlot :: Interpreter Int
 newSlot = do
-    stack <- getStack
-    let keys = Map.keys stack
-    let maxKey = 
-            case keys of
-                [] -> 0
-                _ -> maximum keys
-    return (succ maxKey)
+    (s,h,si,hi) <- get
+    put (s,h,succ si,hi)
+    return si
 
 -- | put value on the heap and return the address of it
 malloc :: Value -> Interpreter Int
@@ -239,13 +281,14 @@ evalExpr = \case
             CPointer addr -> do
                 deref addr >>= \case
                     -- env includes the globals that f can use
-                    Closure env argnames body -> do
+                    Closure _ env argnames body -> do
                         unless (length cargs == length argnames) (throwError (ArityError "called with bad number of args")) 
                         sis <- mapM salloc cargs
                         let argBindings = zip argnames sis
                             argBindings' = Map.fromList argBindings
                             env' = Map.union argBindings' env
                         usingEnv env' (runFunctionBody body)
+                    Builtin func -> func cargs
             _ -> throwError (TypeError "applied non-function")
 
 runFunctionBody :: [Statement] -> Interpreter Cell
@@ -254,6 +297,12 @@ runFunctionBody body = runStatements body >>= \case
     Broke -> return CNone
     Continued -> return CNone
     Normal -> return CNone
+
+(>>!) :: Interpreter Result -> Interpreter Result -> Interpreter Result
+mr >>! ma = do
+    mr >>= \case
+        Normal -> ma
+        r -> return r
 
 runStatements :: [Statement] -> Interpreter Result
 runStatements [] = return Normal
@@ -271,8 +320,8 @@ runStatements (s_:rest) =
         Return e -> Returned <$> evalExpr e
         If cnd thn mEls -> do
             evalExpr cnd >>= \case
-                CBool True -> runStatements thn >> mRest
-                CBool False -> maybe (return Normal) runStatements mEls >> mRest
+                CBool True -> runStatements thn >>! mRest
+                CBool False -> maybe (return Normal) runStatements mEls >>! mRest
                 _ -> throwError (TypeError "if expected bool")            
         While cnd body -> do
             evalExpr cnd >>= \case
@@ -287,9 +336,9 @@ runStatements (s_:rest) =
                 _ -> throwError (TypeError "while expected bool")
         Function f argnames body -> do
             env <- ask -- symtable
-            fsi <- newSlot
+            fsi <- salloc CNone
             let env' = Map.insert f fsi env -- include self in env for recursion
-                closure = Closure env' argnames body
+                closure = Closure f env' argnames body
             fptr <- malloc' closure
             modifyStack (Map.insert fsi fptr) -- then update the stack with the pointer to the closure in the heap
             withVar f fsi mRest
@@ -305,6 +354,9 @@ interpretProgram = evalInterpreter . runProgram
 evalInterpreter :: Interpreter a -> IO (Either RuntimeError a)
 evalInterpreter m = mio 
     where
-        mrws = runInterpreter m
-        me = fst <$> evalRWST mrws mempty mempty
+        m' = do
+            env0 <- initialize
+            local (const env0) m
+        mrws = runInterpreter m'
+        me = fst <$> evalRWST mrws mempty (mempty, mempty, 0,0)
         mio = runExceptT me

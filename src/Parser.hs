@@ -27,7 +27,7 @@ pBinop = makeExprParser pUnop table
         table =
             [ [binary "*" Times, binary "/" FloorDiv]
             , [binary "+" Plus, binary "-" Minus]
-            , [binary "<" Lt, binary ">" Gt, binary "<=" Le, binary ">=" Ge]
+            , [binary "<=" Le, binary ">=" Ge, binary "<" Lt, binary ">" Gt]
             , [binary "==" Eq, binary "!=" Neq]
             , [binary "&&" And, binary "||" Or]
             ]
@@ -144,6 +144,11 @@ parseStatement = runParser pStatement ""
 pProgram :: Parser Program
 pProgram  = Program <$> many pStatement
 
+leftMap :: (t -> a) -> Either t b -> Either a b
+leftMap f = \case
+    Left l -> Left (f l)
+    Right r -> Right r
+
 -- | name then source
-parseProgram :: String -> String -> Either (ParseErrorBundle String Void) Program 
-parseProgram = runParser pProgram
+parseProgram :: String -> String -> Either String Program
+parseProgram a b = leftMap errorBundlePretty $ runParser pProgram a b
