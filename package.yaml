@@ -49,7 +49,7 @@ executables:
     - -w
     - -Wall
     extra-lib-dirs:
-    - ./lib
+    - ./engine-lib
     extra-libraries:
     - engine
     dependencies:
