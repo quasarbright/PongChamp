@@ -170,7 +170,12 @@ std::vector<std::pair<char, Uint32>> SDLGraphicsProgram::getInputs()
 };
 
 
-
+int main(int argc, char* argv[]) {
+    SDLGraphicsProgram* p = new SDLGraphicsProgram(400, 400);
+    while(true) {
+        
+    }
+}
 
 
 
