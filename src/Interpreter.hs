@@ -15,7 +15,7 @@ import GameEngine
 
 import qualified Foreign.C.Types as CTypes
 
-data Cell = 
+data Cell =
     CNumber Int
     | CBool Bool
     | CPointer Int
@@ -115,18 +115,19 @@ str = Builtin $ \case
 square :: CTypes.CInt -> CTypes.CInt
 square x = x * x
 
-toCInt :: Int -> CTypes.CInt 
+toCInt :: Int -> CTypes.CInt
 toCInt = fromIntegral
 
 builtinGameEngine :: Value
 builtinGameEngine = Builtin $ \cs -> do
     engine <- case cs of
         [c1, c2] -> case (c1, c2) of
-            (CNumber w, CNumber h) -> 
+            (CNumber w, CNumber h) ->
                 liftIO(do
-                    return $ makeEngine (toCInt w) (toCInt h)
+                    print "making engine with: " >> print w >> print ", " >> print h
+                    c_makeEngine (toCInt w) (toCInt h)
                 )
-            _ -> throwError (TypeError "game engine needs int width and height")  
+            _ -> throwError (TypeError "game engine needs int width and height")
         _ -> throwError (ArityError "game engine needs width and height")
     return CNone
 
@@ -321,7 +322,7 @@ evalExpr = \case
                 deref addr >>= \case
                     -- env includes the globals that f can use
                     Closure _ env argnames body -> do
-                        unless (length cargs == length argnames) (throwError (ArityError "called with bad number of args")) 
+                        unless (length cargs == length argnames) (throwError (ArityError "called with bad number of args"))
                         sis <- mapM salloc cargs
                         let argBindings = zip argnames sis
                             argBindings' = Map.fromList argBindings
@@ -361,7 +362,7 @@ runStatements (s_:rest) =
             evalExpr cnd >>= \case
                 CBool True -> runStatements thn >>! mRest
                 CBool False -> maybe (return Normal) runStatements mEls >>! mRest
-                _ -> throwError (TypeError "if expected bool")            
+                _ -> throwError (TypeError "if expected bool")
         While cnd body -> do
             evalExpr cnd >>= \case
                 CBool True -> do
@@ -391,7 +392,7 @@ interpretProgram :: Program -> IO (Either RuntimeError Result)
 interpretProgram = evalInterpreter . runProgram
 
 evalInterpreter :: Interpreter a -> IO (Either RuntimeError a)
-evalInterpreter m = mio 
+evalInterpreter m = mio
     where
         m' = do
             env0 <- initialize

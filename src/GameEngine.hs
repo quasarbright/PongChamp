@@ -5,11 +5,8 @@ module GameEngine where
 import Foreign.C.Types
 import Foreign.Ptr
 
-foreign import ccall "wrapper"
-    wrap :: (CInt -> CInt) -> IO (FunPtr (CInt -> CInt))
-
-foreign import ccall "acpp_capi.h makeEngine"
-    makeEngine :: CInt -> CInt -> IO (FunPtr ())
+foreign import ccall "makeEngine"
+    c_makeEngine :: CInt -> CInt -> IO (FunPtr ())
 
 -- foreign import ccall "acpp_capi.h applyStateA"
 --     applyStateA :: FunPtr () -> FunPtr (CInt -> CInt) -> IO (FunPtr ())

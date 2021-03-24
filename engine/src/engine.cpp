@@ -15,6 +15,7 @@
 // Returns a true or false value based on successful completion of setup.
 // Takes in dimensions of window.
 SDLGraphicsProgram::SDLGraphicsProgram(int w, int h):screenWidth(w),screenHeight(h){
+    printf("initializing sdl\n");
 	// Initialization flag
 	bool success = true;
 	// String to hold any errors that occur.
@@ -168,14 +169,6 @@ std::vector<std::pair<char, Uint32>> SDLGraphicsProgram::getInputs()
     //Disable text input
     SDL_StopTextInput();
 };
-
-
-int main(int argc, char* argv[]) {
-    SDLGraphicsProgram* p = new SDLGraphicsProgram(400, 400);
-    while(true) {
-        
-    }
-}
 
 
 

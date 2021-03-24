@@ -16,7 +16,6 @@ void clear(enginePtr ptr);
 
 void flip(enginePtr ptr);
 
-
 void delay(enginePtr ptr, int milliseconds);
 
 void DrawRectangle(enginePtr ptr, int x, int y, int w, int h);

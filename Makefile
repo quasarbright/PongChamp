@@ -38,11 +38,13 @@ MAIN_DPD = $(MAIN_SRC:%.cpp=$(MAIN_OBJ_DIR)/%.dpd)
 MAIN_OBJ = $(MAIN_SRC:%.cpp=$(MAIN_OBJ_DIR)/%.o)
 MAIN_OBJ_WINDOWS = $(MAIN_SRC:%.cpp=$(MAIN_OBJ_DIR)/%-windows.o)
 
-.PHONY: all clean windows
+.PHONY: all clean windows linux
 
 all: $(LINUX) $(WINDOWS)
 
 windows: $(WINDOWS)
+
+linux: $(LINUX)
 
 # -std=c++17 engine/src/engine_capi.cpp engine/src/engine.cpp -I/usr/x86_64-w64-mingw32/include -Iengine/include 
 # -lmingw32 -lSDL2main -lSDL2 -shared -o engine.dll
