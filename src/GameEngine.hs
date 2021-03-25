@@ -8,14 +8,14 @@ import Foreign.Ptr
 foreign import ccall "makeEngine"
     c_makeEngine :: CInt -> CInt -> IO (FunPtr ())
 
--- foreign import ccall "acpp_capi.h applyStateA"
---     applyStateA :: FunPtr () -> FunPtr (CInt -> CInt) -> IO (FunPtr ())
+foreign import ccall "clear"
+    c_clear :: FunPtr () -> IO ()
 
--- foreign import ccall "acpp_capi.h getStateA"
---     getStateA :: FunPtr () -> IO CInt
+foreign import ccall "flip"
+    c_flip :: FunPtr () -> IO ()
 
--- foreign import ccall "acpp_capi.h setStateA"
---     setStateA :: FunPtr () -> CInt -> IO (FunPtr ())
+foreign import ccall "delay"
+    c_delay :: FunPtr () -> CInt -> IO ()
 
--- foreign import ccall "acpp_capi.h freeA"
---     freeA :: FunPtr () -> IO ()
+foreign import ccall "DrawRectangle"
+    c_drawRectangle :: FunPtr () -> CInt -> CInt -> CInt -> CInt -> IO ()

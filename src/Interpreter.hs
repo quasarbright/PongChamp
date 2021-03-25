@@ -14,6 +14,7 @@ import System.IO
 import GameEngine
 
 import qualified Foreign.C.Types as CTypes
+import Foreign.Ptr
 
 data Cell =
     CNumber Int
@@ -27,12 +28,13 @@ data Cell =
 data Value
     = Closure String Env [String] [Statement]
     | Builtin ([Cell] -> Interpreter Cell)
--- CFunction FunPtr
+    | EngineObject (FunPtr ()) -- represents an engine class
 
 instance Show Value where
     show = \case
         Closure f env _ _ -> "<function>: "++f++" "++show env
         Builtin{} -> "<builtin function>"
+        EngineObject{} -> "<engine>"
 
 type SymTable = Map String Int -- varname -> stack slot index
 
@@ -124,12 +126,73 @@ builtinGameEngine = Builtin $ \cs -> do
         [c1, c2] -> case (c1, c2) of
             (CNumber w, CNumber h) ->
                 liftIO(do
-                    print "making engine with: " >> print w >> print ", " >> print h
-                    c_makeEngine (toCInt w) (toCInt h)
-                )
+                        print "making engine with: " >> print w >> print ", " >> print h
+                        c_makeEngine (toCInt w) (toCInt h))
             _ -> throwError (TypeError "game engine needs int width and height")
         _ -> throwError (ArityError "game engine needs width and height")
+    let eng = EngineObject engine
+    malloc' eng
+
+-- Begin Engine API --
+getEngineObjectC :: Cell -> Interpreter (FunPtr ())
+getEngineObjectC c = case c of
+    CPointer i -> do
+        deref i >>= \case
+            EngineObject eng -> return eng
+            _ -> throwError (TypeError "engine function needs an engine object")
+    _ -> throwError (TypeError "engine function needs an engine object")
+
+getEngineObject :: [Cell] -> Interpreter (FunPtr ())
+getEngineObject cs = case cs of
+    cl:_ -> do
+        getEngineObjectC cl
+    _ -> throwError (ArityError "engine function needs game engine object")
+
+engineClear :: Value
+engineClear = Builtin $ \cs -> do
+    eng <- getEngineObject cs
+    liftIO(do
+            c_clear eng)
     return CNone
+
+engineFlip :: Value
+engineFlip = Builtin $ \cs -> do
+    eng <- getEngineObject cs
+    liftIO (do
+            c_flip eng
+        )
+    return CNone
+
+engineDelay :: Value
+engineDelay = Builtin $ \(c:cs)-> do
+    case cs of
+        [c1] -> do
+            eng <- getEngineObjectC c
+            case c1 of
+                (CNumber delay) ->
+                    liftIO(do
+                            c_delay eng (toCInt delay)
+                        )
+                _ -> throwError (TypeError "delay expects one int")
+        _ -> do
+            throwError (ArityError "need 1 arg")
+    return CNone
+
+engineDrawRect :: Value
+engineDrawRect = Builtin $ \(c:cs) -> do
+    case cs of
+        [c1, c2, c3, c4] -> do
+            eng <- getEngineObjectC c
+            case (c1, c2, c3, c4) of
+                (CNumber x, CNumber y, CNumber w, CNumber h) ->
+                    liftIO(do
+                        c_drawRectangle eng (toCInt x) (toCInt y) (toCInt w) (toCInt h)
+                    )
+                _ -> throwError (TypeError "draw rect expects four ints")
+        _ -> throwError (ArityError "need 5 args")
+    return CNone
+
+-- End Engine API --
 
 stdLib :: [(String, Value)]
 stdLib =
@@ -139,6 +202,10 @@ stdLib =
     , ("input", input)
     , ("str", str)
     , ("callEngine", builtinGameEngine)
+    , ("clearEngine", engineClear)
+    , ("flipEngine", engineFlip)
+    , ("delayEngine", engineDelay)
+    , ("drawRect", engineDrawRect)
     ]
 
 initialize :: Interpreter Env
@@ -329,6 +396,7 @@ evalExpr = \case
                             env' = Map.union argBindings' env
                         usingEnv env' (runFunctionBody body)
                     Builtin func -> func cargs
+                    EngineObject _ -> throwError (TypeError "engine object is not callable")
             _ -> throwError (TypeError "applied non-function")
 
 runFunctionBody :: [Statement] -> Interpreter Cell
