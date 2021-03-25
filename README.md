@@ -27,3 +27,4 @@ Haskell provides a FFI interface to interface with other languages. However, in 
 
 ## Other Notes
 * Many developer notes are contained in [this directory](notes/).
+* The first major version of PongChamp will be after sufficient language features are implemented.
