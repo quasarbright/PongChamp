@@ -34,8 +34,6 @@ public:
     void flip();
     // Delay rendering
     void delay(int milliseconds);
-    // loop that runs forever
-    void loop();
     // Get Pointer to Window
     SDL_Window* getSDLWindow();
     // Draw a simple rectangle

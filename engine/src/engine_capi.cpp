@@ -6,7 +6,6 @@ enginePtr makeEngine(int w, int h) {
 
 void clear(enginePtr ptr){
     ptr -> clear();
-
 }
 
 void flip(enginePtr ptr){

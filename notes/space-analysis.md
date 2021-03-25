@@ -50,4 +50,4 @@ CNumber 24
 ```
 
 ### Analysis
-Currently 
+Currently the stack builds up, but can add garbage collection to clear function variabels that are no longer used.
