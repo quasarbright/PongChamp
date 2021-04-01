@@ -3,6 +3,7 @@
 import os
 import argparse
 import subprocess
+import sys
 
 _environ = os.environ.copy()
 
@@ -25,7 +26,7 @@ os.environ["LD_LIBRARY_PATH"] = lib
 
 if sys.platform == 'win32':
     tmp_path = os.environ["PATH"]
-    os.environ["PATH"] = tmp_path + lib + ";"
+    os.environ["PATH"] = tmp_path + ";" + lib + ";"
 
 cmd = ['stack', 'run', '--', args.file[0]]
 subprocess.run(' '.join(cmd), shell=True, env=os.environ)
