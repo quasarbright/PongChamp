@@ -3,12 +3,9 @@ function f(x) {
 		x = x + 1;
 		return x;
 	}
-	__printState__();
 	return g;
 }
 
-let y = 77;
 let h = f(2);
 h();
-println(h());
-// stack gets fucked in call. symtable is fine
+println(h()); // prints 4

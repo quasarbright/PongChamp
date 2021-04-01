@@ -49,9 +49,9 @@ executables:
     - -w
     - -Wall
     extra-lib-dirs:
-    - ./lib
+    - ./engine-lib
     extra-libraries:
-    - acpp
+    - engine
     dependencies:
     - PongChamp
     default-extensions:

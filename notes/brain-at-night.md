@@ -1,4 +1,4 @@
-so we just realized that scoping and mutable variables is fucked. we're going to uniquify names and interpret with dynamic scope. let will add a new name
+so we just realized that scoping and mutable variables is messed up. we're going to uniquify names and interpret with dynamic scope. let will add a new name
 
 wf will check as if it's static scope, but the interpreter will run with dynamic scope
 

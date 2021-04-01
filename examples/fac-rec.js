@@ -1,13 +1,9 @@
 function fac(x) {
-	// print(x);
+	__printState__();
 	if(x <= 1) {
-		// print("iii");
 		return 1;
 	} else {
-		print(fac(x-1));
-		let ans = x * fac(x - 1);
-		// print(ans);
-		return ans;
+		return x * fac(x - 1);
 	}
 }
 
