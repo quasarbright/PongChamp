@@ -6,3 +6,4 @@
 * [ ] classes
 * [ ] modules/imports
 * [ ] algebraic effects?
+* [ ] in browser editor and runner with aws ec2 or a lambda
