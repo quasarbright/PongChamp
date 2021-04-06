@@ -72,10 +72,10 @@ parseExpr = runParser pExpr ""
 -- statements --
 
 pStatement :: Parser Statement
-pStatement = choice [pWhile, pIf, pLet, pFunction, pReturn, pBreak, pContinue, try pAssign, pEval]
+pStatement = choice [pWhile, pIf, pLet, pFunction, pReturn, pBreak, pContinue, pThrow, pTryCatch, try pAssign, pEval]
 
 pBlock :: Parser [Statement]
-pBlock = braces (many pStatement) <|> fmap (:[]) pStatement
+pBlock = braces (many pStatement) <|> fmap pure pStatement
 
 pWhile :: Parser Statement
 pWhile = do
@@ -134,7 +134,19 @@ pBreak :: Parser Statement
 pBreak = pKeyword "break" >> symbol ";" $> Break 
 
 pContinue :: Parser Statement 
-pContinue = pKeyword "continue" >> symbol ";" $> Continue 
+pContinue = pKeyword "continue" >> symbol ";" $> Continue
+
+pThrow :: Parser Statement
+pThrow = Throw <$> (pKeyword "throw" *> pExpr <* symbol ";")
+
+pTryCatch :: Parser Statement
+pTryCatch = do
+    pKeyword "try"
+    tryBlock <- pBlock
+    pKeyword "catch"
+    x <- parens identifier
+    catchBlock <- pBlock
+    return $ TryCatch tryBlock x catchBlock
 
 parseStatement :: String -> Either (ParseErrorBundle String Void) Statement
 parseStatement = runParser pStatement ""
