@@ -16,7 +16,6 @@ import GameEngine
 
 import qualified Foreign.C.Types as CTypes
 import Foreign.Ptr
-import Debug.Trace (traceShowId)
 
 data Cell =
     CNumber Int
@@ -337,6 +336,11 @@ wrapCmp op l r = case (l, r) of
     (CNumber a, CNumber b) -> return (CBool (op a b))
     _ -> throwError (TypeError "comparison expected numbers")
 
+declareVar :: String -> Interpreter Result -> Interpreter Result
+declareVar s mRest = do
+    si <- newSlot
+    withVar s si mRest
+
 evalExpr :: Expr -> Interpreter Cell
 evalExpr = \case
     Var x -> symLookup x
@@ -420,9 +424,7 @@ runStatements [] = return Normal
 runStatements (s_:rest) =
     let mRest = runStatements rest
     in case s_ of
-        Let x Nothing -> do
-            si <- newSlot
-            withVar x si mRest
+        Let x Nothing -> declareVar x mRest
         Let x (Just a) -> let rest' = (Let x Nothing:Assign x a:rest) in runStatements rest'
         Assign x e -> (assignVar x =<< evalExpr e) >> mRest
         Eval e -> evalExpr e >> mRest
@@ -448,13 +450,22 @@ runStatements (s_:rest) =
         Function f argnames body -> do
             env <- ask -- symtable
             fsi <- salloc CNone
-            let fVars = traceShowId $ freeVars s_
+            let fVars = freeVars s_
                 env' = Map.filterWithKey (\k _ -> k `elem` fVars) env
                 env'' = Map.insert f fsi env' -- include self in env for recursion
                 closure = Closure f env'' argnames body
             fptr <- malloc' closure
             modifyStack (Map.insert fsi fptr) -- then update the stack with the pointer to the closure in the heap
-            withVar f fsi mRest 
+            withVar f fsi mRest
+        Throw e -> do
+            c <- evalExpr e
+            throwError (UserError c)
+        TryCatch tryStmts x catchStmts -> do
+            let mtc = catchError (runStatements tryStmts) $ \case
+                        UserError err -> declareVar x (assignVar x err >> runStatements catchStmts)
+                        err -> throwError err
+            mtc >>! mRest
+            
 
 
 runProgram :: Program -> Interpreter Result
