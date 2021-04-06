@@ -108,6 +108,11 @@ wfStatements (s_:rest) =
         unlessM (asksContext isInLoop) (throw BadBreak) 
     Continue -> do
         unlessM (asksContext isInLoop) (throw BadContinue)
+    Throw e -> wfExpr e >> mRest
+    TryCatch tryStmts x catchStmts -> do
+        wfStatements tryStmts
+        withVar x (wfStatements catchStmts)
+        mRest
 
 wfProgram :: Program -> Checker ()
 wfProgram (Program stmts) = wfStatements stmts
