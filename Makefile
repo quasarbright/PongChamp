@@ -6,13 +6,13 @@ CXX = clang++
 INCLUDE = -Iengine/include -Iinclude/component_system -Iinclude/resource_management -Iinclude/utils -I/usr/include/SDL2/
 CXXFLAGS = -std=c++17 $(INCLUDE)
 WINDOWS_CXX = x86_64-w64-mingw32-g++
-WINDOWS_INCLUDE = -I/usr/x86_64-w64-mingw32/include -Iengine/include
+WINDOWS_INCLUDE = -I/usr/x86_64-w64-mingw32/include -Iengine\lib\x86_64-w64-mingw32\include -Iengine/include
 WINDOWS_CXXFLAGS = -std=c++17 $(WINDOWS_INCLUDE)
 
 LDFLAGS := 
 LDLIBS := -lSDL2 -ldl -lSDL2_ttf -lSDL2_mixer -lSDL2_image
 
-WINDOWS_LDFLAGS :=
+WINDOWS_LDFLAGS := -Lengine\lib\x86_64-w64-mingw32\lib
 WINDOWS_LDLIBS := -lmingw32 -lSDL2main -lSDL2
 
 # optional params checks
@@ -68,3 +68,7 @@ $(MAIN_OBJ_DIR)/%-windows.o : $(MAIN_SRC_DIR)/%.cpp | $(MAIN_OBJ_DIR)
 
 clean:
 	@$(RM) -rv $(BIN_DIR) $(MAIN_OBJ_DIR)
+
+clean-windows:
+	del /Q $(BIN_DIR) $(MAIN_OBJ_DIR)
+
