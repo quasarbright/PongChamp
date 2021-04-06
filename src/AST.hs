@@ -15,6 +15,8 @@ data Statement
     | Return Expr
     | Break
     | Continue
+    | Throw Expr
+    | TryCatch [Statement] String [Statement]
     deriving(Eq, Ord, Show)
 
 data Binop = Plus | Minus | Times | FloorDiv | Or | And | Eq | Neq | Lt | Le | Gt | Ge deriving(Eq, Ord, Show)
@@ -67,7 +69,7 @@ instance FreeVars [Statement] where
             -- | immediate vars bound (doesn't recur)
             boundVars = \case
                 Let x _ -> [x]
-                Function f args _ -> [f] <>. args
+                Function f args _ -> [f] <>. args 
                 Assign{} -> []
                 While{} -> []
                 If{} -> []
@@ -75,6 +77,8 @@ instance FreeVars [Statement] where
                 Return{} -> []
                 Break{} -> []
                 Continue{} -> []
+                Throw{} -> []
+                TryCatch{} -> []
             go stmt rest = freeVars stmt <>. withouts (boundVars stmt) rest
 
 instance FreeVars Statement where
@@ -88,3 +92,5 @@ instance FreeVars Statement where
         Return e -> freeVars e
         Break -> []
         Continue -> []
+        Throw e -> freeVars e
+        TryCatch tryStmts x catchStmts -> freeVars tryStmts <>. withouts [x] (freeVars catchStmts)
