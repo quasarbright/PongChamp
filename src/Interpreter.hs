@@ -12,6 +12,7 @@ import Data.List (sortBy)
 import Data.Function
 import System.IO
 import GameEngine
+    ( c_clear, c_delay, c_drawRectangle, c_flip, c_makeEngine )
 
 import qualified Foreign.C.Types as CTypes
 import Foreign.Ptr
@@ -50,6 +51,7 @@ data RuntimeError
     | BadDeref
     | TypeError String
     | ArityError String
+    | UserError Cell
     deriving(Eq, Ord, Show)
 
 data Result
@@ -452,7 +454,7 @@ runStatements (s_:rest) =
                 closure = Closure f env'' argnames body
             fptr <- malloc' closure
             modifyStack (Map.insert fsi fptr) -- then update the stack with the pointer to the closure in the heap
-            withVar f fsi mRest
+            withVar f fsi mRest 
 
 
 runProgram :: Program -> Interpreter Result
