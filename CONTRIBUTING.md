@@ -1,10 +1,11 @@
 ## Windows
 
-1. https://code.visualstudio.com/docs/cpp/config-mingw
-2. https://lazyfoo.net/tutorials/SDL/01_hello_SDL/windows/mingw/index.php
-3. install the sdl lib into a engine/lib folder
-4. run make (or your make alternative) windows
-5. develop!
+* https://code.visualstudio.com/docs/cpp/config-mingw
+* https://lazyfoo.net/tutorials/SDL/01_hello_SDL/windows/mingw/index.php
+* install the sdl lib into a engine/lib folder
+* install SDL2.dll into engine-lib/
+* run make (or your make alternative) windows
+* develop!
 
 ## Linux
 
