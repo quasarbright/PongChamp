@@ -70,5 +70,5 @@ clean:
 	@$(RM) -rv $(BIN_DIR)/libengine.* $(MAIN_OBJ_DIR)
 
 clean-windows:
-	del /Q $(BIN_DIR) $(MAIN_OBJ_DIR)
+	del /Q $(BIN_DIR)\libengine.* $(MAIN_OBJ_DIR)
 
