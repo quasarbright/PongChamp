@@ -4,3 +4,5 @@
 *.iml
 *.cabal
 obj/
+engine/lib/
+engine-lib

@@ -1,3 +1,5 @@
+* [x] functions only close over variables free in their body
+* [ ] exceptions + try/catch
 * [ ] continuations
 * [ ] tail calls
 * [ ] objects, arrays

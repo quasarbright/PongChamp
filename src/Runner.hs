@@ -3,7 +3,6 @@ module Runner where
 import Parser
 import Interpreter
 import WellFormedness
-import Control.Monad
 
 swallow :: Show err => Either err a -> a
 swallow = \case
@@ -20,7 +19,9 @@ runString name src = do
     let parsed = swallows (parseProgram name src)
         errs = checkProgram parsed
     case errs of
-        [] -> void $ swallow <$> interpretProgram parsed
+        [] -> do
+            mResult <- interpretProgram parsed
+            swallow mResult `seq` return ()
         _ -> mapM_ print errs
     
 
