@@ -10,7 +10,7 @@ WINDOWS_INCLUDE = -I/usr/x86_64-w64-mingw32/include -Iengine\lib\x86_64-w64-ming
 WINDOWS_CXXFLAGS = -std=c++17 $(WINDOWS_INCLUDE)
 
 LDFLAGS := 
-LDLIBS := -lSDL2 -ldl -lSDL2_ttf -lSDL2_mixer -lSDL2_image
+LDLIBS := -lSDL2
 
 WINDOWS_LDFLAGS := -Lengine\lib\x86_64-w64-mingw32\lib
 WINDOWS_LDLIBS := -lmingw32 -lSDL2main -lSDL2
