@@ -15,6 +15,7 @@ import GameEngine
 
 import qualified Foreign.C.Types as CTypes
 import Foreign.Ptr
+import Debug.Trace (traceShowId)
 
 data Cell =
     CNumber Int
@@ -445,12 +446,13 @@ runStatements (s_:rest) =
         Function f argnames body -> do
             env <- ask -- symtable
             fsi <- salloc CNone
-            let env' = Map.insert f fsi env -- include self in env for recursion
-                closure = Closure f env' argnames body
+            let fVars = traceShowId $ freeVars s_
+                env' = Map.filterWithKey (\k _ -> k `elem` fVars) env
+                env'' = Map.insert f fsi env' -- include self in env for recursion
+                closure = Closure f env'' argnames body
             fptr <- malloc' closure
             modifyStack (Map.insert fsi fptr) -- then update the stack with the pointer to the closure in the heap
             withVar f fsi mRest
-        -- rbody <- runStatements body
 
 
 runProgram :: Program -> Interpreter Result
