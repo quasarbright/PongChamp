@@ -12,10 +12,3 @@ function f(x) {
 let h = f(2);
 h();
 println(h()); // prints 4
-
-function a() {
-	__printState__();
-	a();
-}
-
-a();

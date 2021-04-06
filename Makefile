@@ -33,7 +33,6 @@ WINDOWS = $(BIN_DIR)/libengine.dll
 # src file list
 MAIN_SRC = engine.cpp engine_capi.cpp
 
-MAIN_DPD = $(MAIN_SRC:%.cpp=$(MAIN_OBJ_DIR)/%.dpd)
 # set up object file list
 MAIN_OBJ = $(MAIN_SRC:%.cpp=$(MAIN_OBJ_DIR)/%.o)
 MAIN_OBJ_WINDOWS = $(MAIN_SRC:%.cpp=$(MAIN_OBJ_DIR)/%-windows.o)
@@ -62,16 +61,10 @@ $(BIN_DIR) $(MAIN_OBJ_DIR):
 
 # object files
 $(MAIN_OBJ_DIR)/%.o : $(MAIN_SRC_DIR)/%.cpp | $(MAIN_OBJ_DIR)
-	$(CXX) -fPIC -c $(<) -o $(@) $(CXXFLAGS)
+	$(CXX) -fPIC -c $< -o $@ $(CXXFLAGS)
 
 $(MAIN_OBJ_DIR)/%-windows.o : $(MAIN_SRC_DIR)/%.cpp | $(MAIN_OBJ_DIR)
-	$(WINDOWS_CXX) -fPIC -c $(<) -o $(@) $(WINDOWS_CXXFLAGS)
-
-# dpd files
-$(MAIN_OBJ_DIR)/%.dpd : $(MAIN_SRC_DIR)/%.cpp | $(MAIN_OBJ_DIR)
-	$(CXX) -MM $(<) -o $(@) $(CXXFLAGS) -MT $(<:.cpp=.o)
+	$(WINDOWS_CXX) -fPIC -c $< -o $@ $(WINDOWS_CXXFLAGS)
 
 clean:
 	@$(RM) -rv $(BIN_DIR) $(MAIN_OBJ_DIR)
-
--include $(MAIN_DPD)
