@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFunctor #-}
-module Learning.RecursionSchemes where
+module Learning.RecursionSchemes() where
 
 data ExprF a
     = Var String
