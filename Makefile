@@ -67,7 +67,7 @@ $(MAIN_OBJ_DIR)/%-windows.o : $(MAIN_SRC_DIR)/%.cpp | $(MAIN_OBJ_DIR)
 	$(WINDOWS_CXX) -fPIC -c $< -o $@ $(WINDOWS_CXXFLAGS)
 
 clean:
-	@$(RM) -rv $(BIN_DIR) $(MAIN_OBJ_DIR)
+	@$(RM) -rv $(BIN_DIR)/libengine.* $(MAIN_OBJ_DIR)
 
 clean-windows:
 	del /Q $(BIN_DIR) $(MAIN_OBJ_DIR)
