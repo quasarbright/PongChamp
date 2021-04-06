@@ -2,4 +2,4 @@ function f(x) {
 	println("inside");
 	return x;
 }
-return f(2)
+return f(2);
