@@ -121,7 +121,7 @@ pAssign = do
     return $ Assign x rhs
 
 pEval :: Parser Statement
-pEval = Eval <$> pExpr <* symbol ";"
+pEval = Eval <$> pCall <* symbol ";"
 
 pReturn :: Parser Statement
 pReturn = do
