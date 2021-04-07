@@ -72,6 +72,10 @@ assertInScope x = do
     vars <- askVars
     unless (x `elem` vars) (throw (UnboundVar x))
 
+checkDups :: [String] -> Checker ()
+checkDups [] = nothing
+checkDups (x:xs) = when (x `elem` xs) (throw (DupVar x)) >> checkDups xs
+
 wfExpr :: Expr -> Checker ()
 wfExpr = \case
     Var x -> assertInScope x
@@ -81,6 +85,10 @@ wfExpr = \case
     Unop _ e -> wfExpr e
     Binop _ l r -> mapM_ wfExpr [l, r]
     Call f args -> mapM_ wfExpr (f:args)
+    ObjectLiteral props -> checkDups names >> mapM_ wfExpr values
+        where
+            (names, values) = unzip props
+    FieldAccess e _ -> wfExpr e
 
 wfStatements :: [Statement] -> Checker ()
 wfStatements [] = nothing
@@ -94,12 +102,7 @@ wfStatements (s_:rest) =
     Let x (Just rhs) -> wfStatements (Let x Nothing:Assign x rhs:rest)
     Assign x rhs -> assertInScope x >> wfExpr rhs >> mRest
     Eval e -> wfExpr e >> mRest
-    Function f args body -> mArgs >> inFunction (withVars (f:args) (wfStatements body)) >> withVar f mRest
-        where
-            mArgs = checkDups args -- reverse to get the errors in the right order
-            checkDups :: [String] -> Checker ()
-            checkDups [] = nothing
-            checkDups (x:xs) = when (x `elem` xs) (throw (DupVar x)) >> checkDups xs
+    Function f args body -> checkDups args >> inFunction (withVars (f:args) (wfStatements body)) >> withVar f mRest
     Return e -> do
         unlessM (asksContext isInFunction) (throw BadReturn)
         wfExpr e
