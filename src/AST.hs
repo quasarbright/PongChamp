@@ -5,11 +5,18 @@ import Data.List(union)
 
 newtype Program = Program [Statement] deriving(Eq, Ord, Show)
 
+data LHS
+    = LVar String
+    | LField Expr String
+    deriving(Eq, Ord, Show)
+
+type RHS = Expr -- @ ryan
+
 data Statement
     = While Expr [Statement]
     | If Expr [Statement] (Maybe [Statement])
     | Let String (Maybe Expr)
-    | Assign String Expr
+    | Assign LHS Expr
     | Eval Expr
     | Function String [String] [Statement]
     | Return Expr
@@ -85,12 +92,17 @@ instance FreeVars [Statement] where
                 TryCatch{} -> []
             go stmt rest = freeVars stmt <>. withouts (boundVars stmt) rest
 
+instance FreeVars LHS where
+    freeVars = \case
+        LVar x -> [x]
+        LField obj _ -> freeVars obj
+
 instance FreeVars Statement where
     freeVars = \case
         While e body -> freeVars e <>. freeVars body
         If e thn mEls -> freeVars e <>. freeVars thn <>. freeVars mEls
         Let _ mRhs -> freeVars mRhs
-        Assign x rhs -> [x] <>. freeVars rhs
+        Assign lhs rhs -> freeVars lhs <>. freeVars rhs
         Eval e -> freeVars e
         Function f args body -> withouts (f:args) (freeVars body)
         Return e -> freeVars e

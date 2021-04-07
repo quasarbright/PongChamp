@@ -127,13 +127,21 @@ pFunction = do
     body <- pBlock
     return $ Function f args body
 
+pLHS :: Parser LHS
+pLHS = do
+    e <- pFieldAccess
+    case e of
+        Var x -> return $ LVar x
+        FieldAccess obj x -> return $ LField obj x
+        _ -> fail "expected var or field access for lhs"
+
 pAssign :: Parser Statement
 pAssign = do
-    x <- identifier
+    lhs <- pLHS
     symbol "="
     rhs <- pExpr
     symbol ";"
-    return $ Assign x rhs
+    return $ Assign lhs rhs
 
 pEval :: Parser Statement
 pEval = Eval <$> pCall <* symbol ";"

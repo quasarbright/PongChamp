@@ -99,8 +99,9 @@ wfStatements (s_:rest) =
     If cond thn mEls -> wfExpr cond >> wfStatements (thn ++ els) >> mRest
         where els = fromMaybe [] mEls
     Let x Nothing -> withVar x mRest
-    Let x (Just rhs) -> wfStatements (Let x Nothing:Assign x rhs:rest)
-    Assign x rhs -> assertInScope x >> wfExpr rhs >> mRest
+    Let x (Just rhs) -> wfStatements (Let x Nothing:Assign (LVar x) rhs:rest)
+    Assign (LVar x) rhs -> assertInScope x >> wfExpr rhs >> mRest
+    Assign (LField obj _) rhs -> wfExpr obj >> wfExpr rhs >> mRest
     Eval e -> wfExpr e >> mRest
     Function f args body -> checkDups args >> inFunction (withVars (f:args) (wfStatements body)) >> withVar f mRest
     Return e -> do

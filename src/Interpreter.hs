@@ -442,8 +442,22 @@ runStatements (s_:rest) =
     let mRest = runStatements rest
     in case s_ of
         Let x Nothing -> declareVar x mRest
-        Let x (Just a) -> let rest' = (Let x Nothing:Assign x a:rest) in runStatements rest'
-        Assign x e -> (assignVar x =<< evalExpr e) >> mRest
+        Let x (Just a) -> let rest' = (Let x Nothing:Assign (LVar x) a:rest) in runStatements rest'
+        Assign (LVar x) e -> (assignVar x =<< evalExpr e) >> mRest
+        Assign (LField eObj x) eRhs -> do
+            cObj <- evalExpr eObj
+            let err :: Interpreter a
+                err = throwError (AttributeError x)
+            case cObj of
+                CPointer addr -> deref addr >>= \case
+                    Object props -> do
+                        -- eval as late as possible so lhs is all good before looking at rhs (eval order choice)
+                        cRhs <- evalExpr eRhs
+                        let obj' = Object $ Map.insert x cRhs props
+                        modifyHeap (Map.insert addr obj')
+                    _ -> err
+                _ -> err
+            mRest
         Eval e -> evalExpr e >> mRest
         Break -> return Broke
         Continue -> return Continued
