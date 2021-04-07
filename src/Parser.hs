@@ -44,13 +44,28 @@ pUnop = makeExprParser pCall table
 
 pCall :: Parser Expr
 pCall = do
-    f <- pAtomic
+    f <- pFieldAccess
     let pArgs = parens (pExpr `sepBy` symbol ",")
     argss <- many pArgs
     return $ foldl' Call f argss
 
+pFieldAccess :: Parser Expr
+pFieldAccess = do
+    obj <- pAtomic
+    accesses <- many (symbol "." *> identifier)
+    return $ foldl' FieldAccess obj accesses
+
 pAtomic :: Parser Expr
-pAtomic = choice [pBool, pVar, pString, pNum, parens pExpr]
+pAtomic = choice [pBool, pVar, pString, pNum, parens pExpr, pObjectLiteral]
+
+pObjectLiteral :: Parser Expr
+pObjectLiteral = ObjectLiteral <$> braces (pProp `sepBy` symbol ",")
+    where
+        pProp = do
+            x <- identifier
+            symbol ":"
+            v <- pExpr
+            return (x,v)
 
 pVar :: Parser Expr
 pVar = Var <$> identifier -- String -> Expr, Parser String, create Parser Expr
