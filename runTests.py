@@ -14,6 +14,7 @@ of foo.err are a substring of what is written to stderr
 import unittest
 import os
 import subprocess
+import sys
 
 ######################### customize these per language #########################
 
@@ -26,7 +27,10 @@ build_cmd = ["stack", "build"]
 def run_cmd(path):
     """Generates the command to run a file at `path`
     """
-    return ["python", os.path.join(".", "bin", "PongChamp"), path]
+    if sys.platform == "win32":
+        return ["python", os.path.join(".", "bin", "PongChamp"), path]
+    else:
+        return [os.path.join(".", "bin", "PongChamp"), path]
 
 ######################### leave these be #########################
 
