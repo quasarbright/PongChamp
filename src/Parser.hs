@@ -177,7 +177,7 @@ parseStatement = runParser pStatement ""
 -- program --
 
 pProgram :: Parser Program
-pProgram  = Program <$> many pStatement
+pProgram  = Program <$> (scn *> many pStatement)
 
 leftMap :: (t -> a) -> Either t b -> Either a b
 leftMap f = \case
