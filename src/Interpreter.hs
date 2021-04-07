@@ -8,7 +8,7 @@ import AST
 import Control.Monad.RWS.Strict
 import Control.Arrow
 import Data.Functor
-import Data.List (sortBy)
+import Data.List (sortBy, intercalate)
 import Data.Function
 import System.IO
 import GameEngine
@@ -28,12 +28,15 @@ data Cell =
 -- closed env contains the names which were in scope at the time of the function's creation and their slots. This will include the function itself, for recursion
 data Value
     = Closure String Env [String] [Statement]
+    | Object (Map String Cell)
     | Builtin ([Cell] -> Interpreter Cell)
     | EngineObject (FunPtr ()) -- represents an engine class
 
 instance Show Value where
     show = \case
         Closure f env _ _ -> "<function>: "++f++" "++show env
+        Object props -> "{"++intercalate ", " (fmap showProp (Map.toList props))++"}"
+            where showProp (k,v) = k++": "++show v
         Builtin{} -> "<builtin function>"
         EngineObject{} -> "<engine>"
 
@@ -51,6 +54,7 @@ data RuntimeError
     | TypeError String
     | ArityError String
     | UserError Cell
+    | AttributeError String -- TODO pretty print the value too once you have FullValue or whatever
     deriving(Eq, Ord, Show)
 
 data Result
@@ -392,19 +396,32 @@ evalExpr = \case
         cf <- evalExpr f
         cargs <- mapM evalExpr args
         case cf of
-            CPointer addr -> do
-                deref addr >>= \case
-                    -- env includes the globals that f can use
-                    Closure _ env argnames body -> do
-                        unless (length cargs == length argnames) (throwError (ArityError "called with bad number of args"))
-                        sis <- mapM salloc cargs
-                        let argBindings = zip argnames sis
-                            argBindings' = Map.fromList argBindings
-                            env' = Map.union argBindings' env
-                        usingEnv env' (runFunctionBody body)
-                    Builtin func -> func cargs
-                    EngineObject _ -> throwError (TypeError "engine object is not callable")
+            CPointer addr -> deref addr >>= \case
+                -- env includes the globals that f can use
+                Closure _ env argnames body -> do
+                    unless (length cargs == length argnames) (throwError (ArityError "called with bad number of args"))
+                    sis <- mapM salloc cargs
+                    let argBindings = zip argnames sis
+                        argBindings' = Map.fromList argBindings
+                        env' = Map.union argBindings' env
+                    usingEnv env' (runFunctionBody body)
+                Object{} -> throwError (TypeError "object is not callable")
+                Builtin func -> func cargs
+                EngineObject{} -> throwError (TypeError "engine object is not callable")
             _ -> throwError (TypeError "applied non-function")
+    ObjectLiteral props -> do
+        let (keys, exprs) = unzip props
+        cells <- mapM evalExpr exprs
+        malloc' (Object (Map.fromList (zip keys cells)))
+    FieldAccess eObj x -> do
+        cObj <- evalExpr eObj
+        let err :: Interpreter a
+            err = throwError (AttributeError x)
+        case cObj of
+            CPointer addr -> deref addr >>= \case
+                Object props -> maybe err return $ Map.lookup x props
+                _ -> err -- TODO if functions are objects, handle that here
+            _ -> err
 
 runFunctionBody :: [Statement] -> Interpreter Cell
 runFunctionBody body = runStatements body >>= \case
