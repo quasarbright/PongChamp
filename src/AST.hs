@@ -30,6 +30,8 @@ data Expr
     | Unop Unop Expr
     | Binop Binop Expr Expr
     | Call Expr [Expr]
+    | ObjectLiteral [(String, Expr)]
+    | FieldAccess Expr String
     deriving(Eq, Ord, Show)
 
 class FreeVars e where
@@ -44,6 +46,8 @@ instance FreeVars Expr where
         Unop _ e -> freeVars e
         Binop _ l r -> freeVars l <>. freeVars r
         Call f xs -> freeVars (f:xs)
+        ObjectLiteral props -> freeVars (snd <$> props)
+        FieldAccess e _ -> freeVars e
 
 unions :: Eq a => [[a]] -> [a]
 unions = foldr union []
