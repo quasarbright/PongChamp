@@ -16,6 +16,7 @@ Welcome to our PongChamp language! This was a project that was started as a week
 The simplest way to do this is to run `./bin/PongChamp [file]`, or if you are on Windows `python3 .\bin\PongChamp [file]`. This ensures your library path is appropriately set. Since the engine-lib is not installed to your machines known library path, `LD_LIBRARY_PATH` needs to be set for `stack` to function correctly. If you want to run with `stack`, this may serve your purposes: `LD_LIBRARY_PATH=$(pwd)/engine-lib/ stack run -- [file]`. Note that for a Windows build to function properly the `PATH` variable needs to be set, rather than `LD_LIBRARY_PATH`. The python script also does this currently.
 
 ## Current features
+* Exceptions and exception handling
 * Loops
 * Datatypes: Number, String, Boolean, Objects
 * Object Literals
