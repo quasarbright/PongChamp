@@ -16,6 +16,8 @@ import GameEngine
 
 import qualified Foreign.C.Types as CTypes
 import Foreign.Ptr
+import Data.Vector(Vector, (!))
+import qualified Data.Vector as V
 
 data Cell =
     CNumber Int
@@ -29,6 +31,7 @@ data Cell =
 data Value
     = Closure String Env [String] [Statement]
     | Object (Map String Cell)
+    | Array (Vector Cell)
     | Builtin ([Cell] -> Interpreter Cell)
     | EngineObject (FunPtr ()) -- represents an engine class
 
@@ -422,6 +425,7 @@ evalExpr = \case
                 Object props -> maybe err return $ Map.lookup x props
                 _ -> err -- TODO if functions are objects, handle that here
             _ -> err
+    _ -> undefined
 
 runFunctionBody :: [Statement] -> Interpreter Cell
 runFunctionBody body = runStatements body >>= \case

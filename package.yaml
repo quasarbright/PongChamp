@@ -26,6 +26,7 @@ dependencies:
 - mtl
 - extra
 - transformers
+- vector
 
 library:
   source-dirs: src
