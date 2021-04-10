@@ -6,8 +6,9 @@ import Data.List(union)
 newtype Program = Program [Statement] deriving(Eq, Ord, Show)
 
 data LHS
-    = LVar String
-    | LField Expr String
+    = LVar String -- x
+    | LField Expr String -- (e).x
+    | LIndex Expr Expr -- e[e]
     deriving(Eq, Ord, Show)
 
 type RHS = Expr -- @ ryan
@@ -34,11 +35,13 @@ data Expr
     | Number Int
     | String String
     | Bool Bool
-    | Unop Unop Expr
-    | Binop Binop Expr Expr
-    | Call Expr [Expr]
-    | ObjectLiteral [(String, Expr)]
-    | FieldAccess Expr String
+    | Unop Unop Expr -- !e
+    | Binop Binop Expr Expr -- e + e
+    | Call Expr [Expr] -- e(e,e)
+    | ObjectLiteral [(String, Expr)] -- {x: e, x: e}
+    | ArrayLiteral [Expr] -- [e,e,e]
+    | FieldAccess Expr String -- e.x
+    | IndexAccess Expr Expr -- e[e]
     deriving(Eq, Ord, Show)
 
 class FreeVars e where
@@ -51,10 +54,12 @@ instance FreeVars Expr where
         String{} -> mempty
         Bool{} -> mempty
         Unop _ e -> freeVars e
-        Binop _ l r -> freeVars l <>. freeVars r
+        Binop _ l r -> freeVars [l,r]
         Call f xs -> freeVars (f:xs)
         ObjectLiteral props -> freeVars (snd <$> props)
+        ArrayLiteral es -> freeVars es
         FieldAccess e _ -> freeVars e
+        IndexAccess e ind -> freeVars [e,ind]
 
 unions :: Eq a => [[a]] -> [a]
 unions = foldr union []
@@ -96,6 +101,7 @@ instance FreeVars LHS where
     freeVars = \case
         LVar x -> [x]
         LField obj _ -> freeVars obj
+        LIndex e ind -> freeVars [e,ind]
 
 instance FreeVars Statement where
     freeVars = \case
