@@ -1,0 +1,6 @@
+CNumber 2
+[CNumber 4,CNumber 5]
+CNumber 4
+CNumber 3
+[CNumber 2,CNumber 4,CPointer 10,CString "a"]
+CNumber 4

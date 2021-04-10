@@ -40,6 +40,7 @@ instance Show Value where
         Closure f env _ _ -> "<function>: "++f++" "++show env
         Object props -> "{"++intercalate ", " (fmap showProp (Map.toList props))++"}"
             where showProp (k,v) = k++": "++show v
+        Array elements -> "["++intercalate "," (fmap show (V.toList elements))++"]"
         Builtin{} -> "<builtin function>"
         EngineObject{} -> "<engine>"
 
@@ -98,6 +99,15 @@ builtinPrint = Builtin builtinPrint_
 
 builtinPrintln :: Value
 builtinPrintln = Builtin $ \cs -> builtinPrint_ cs >> liftIO (putStrLn "") $> CNone
+
+arrayAppend :: Int -> Value
+arrayAppend addr = Builtin $ \case
+    cells -> do
+        deref addr >>= \case
+            Array elements -> do
+                let array' = Array $ (V.++) elements (V.fromList cells)
+                modifyHeap (Map.insert addr array') $> CNone
+            _ -> throwError $ TypeError "can only append to an array"
 
 sortMap :: Ord a1 => ((k, a2) -> a1) -> Map k a2 -> [(k, a2)]
 sortMap key m = m & Map.toList & sortBy (compare `on` key)
@@ -409,6 +419,7 @@ evalExpr = \case
                         env' = Map.union argBindings' env
                     usingEnv env' (runFunctionBody body)
                 Object{} -> throwError (TypeError "object is not callable")
+                Array{} -> throwError (TypeError "array is not callable")
                 Builtin func -> func cargs
                 EngineObject{} -> throwError (TypeError "engine object is not callable")
             _ -> throwError (TypeError "applied non-function")
@@ -416,6 +427,9 @@ evalExpr = \case
         let (keys, exprs) = unzip props
         cells <- mapM evalExpr exprs
         malloc' (Object (Map.fromList (zip keys cells)))
+    ArrayLiteral eArr -> do
+        cells <- mapM evalExpr eArr
+        malloc' (Array (V.fromList cells))
     FieldAccess eObj x -> do
         cObj <- evalExpr eObj
         let err :: Interpreter a
@@ -423,9 +437,22 @@ evalExpr = \case
         case cObj of
             CPointer addr -> deref addr >>= \case
                 Object props -> maybe err return $ Map.lookup x props
+                Array elements -> case x of
+                    "length" -> return $ CNumber (V.length elements)
+                    "append" -> malloc' $ arrayAppend addr
+                    _ -> throwError (AttributeError (x ++ " does not exist on arrays"))
                 _ -> err -- TODO if functions are objects, handle that here
             _ -> err
-    _ -> undefined
+    IndexAccess eObj eInd -> do
+        evalExpr eObj >>= \case
+            CPointer addr -> deref addr >>= \case
+                Array elements -> do
+                    evalExpr eInd >>= \case
+                        CNumber ind -> return $ elements ! (ind `mod` V.length elements)
+                        _ -> throwError (TypeError "can't index an array with a non-integer value")
+                _ -> throwError (TypeError "can't index a non array")
+            _ -> throwError (TypeError "can't index a non array")
+            
 
 runFunctionBody :: [Statement] -> Interpreter Cell
 runFunctionBody body = runStatements body >>= \case
@@ -461,6 +488,22 @@ runStatements (s_:rest) =
                         modifyHeap (Map.insert addr obj')
                     _ -> err
                 _ -> err
+            mRest
+        Assign (LIndex eArr eInd) eRhs -> do
+            cArr <- evalExpr eArr
+            case cArr of
+                CPointer addr -> deref addr >>= \case
+                    Array elements -> do
+                        cInd <- evalExpr eInd
+                        case cInd of
+                            CNumber ind -> do
+                                cRhs <- evalExpr eRhs
+                                let ind' = ind `mod` V.length elements
+                                    arr' = Array $ V.update elements (V.singleton (ind', cRhs))
+                                modifyHeap (Map.insert addr arr')
+                            _ -> throwError (TypeError "array index can only be a number")
+                    _ -> throwError (TypeError "cannot index a non array value")
+                _ -> throwError (TypeError "cannot index a non array value")
             mRest
         Eval e -> evalExpr e >> mRest
         Break -> return Broke
