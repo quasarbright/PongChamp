@@ -76,6 +76,13 @@ checkDups :: [String] -> Checker ()
 checkDups [] = nothing
 checkDups (x:xs) = when (x `elem` xs) (throw (DupVar x)) >> checkDups xs
 
+wfLHS :: LHS -> Checker ()
+wfLHS = \case
+    LVar x -> assertInScope x
+    LField obj _ -> wfExpr obj
+    LIndex e ind -> wfExpr e >> wfExpr ind
+    
+
 wfExpr :: Expr -> Checker ()
 wfExpr = \case
     Var x -> assertInScope x
@@ -102,9 +109,7 @@ wfStatements (s_:rest) =
         where els = fromMaybe [] mEls
     Let x Nothing -> withVar x mRest
     Let x (Just rhs) -> wfStatements (Let x Nothing:Assign (LVar x) rhs:rest)
-    Assign (LVar x) rhs -> assertInScope x >> wfExpr rhs >> mRest
-    Assign (LField obj _) rhs -> wfExpr obj >> wfExpr rhs >> mRest
-    Assign (LIndex e ind) rhs -> wfExpr e >> wfExpr ind >> wfExpr rhs >> mRest
+    Assign lhs rhs -> wfLHS lhs >> wfExpr rhs >> mRest
     Eval e -> wfExpr e >> mRest
     Function f args body -> checkDups args >> inFunction (withVars (f:args) (wfStatements body)) >> withVar f mRest
     Return e -> do
