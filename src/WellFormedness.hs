@@ -88,7 +88,9 @@ wfExpr = \case
     ObjectLiteral props -> checkDups names >> mapM_ wfExpr values
         where
             (names, values) = unzip props
+    ArrayLiteral props -> mapM_ wfExpr props
     FieldAccess e _ -> wfExpr e
+    IndexAccess e1 e2 -> wfExpr e1 >> wfExpr e2
 
 wfStatements :: [Statement] -> Checker ()
 wfStatements [] = nothing
@@ -102,6 +104,7 @@ wfStatements (s_:rest) =
     Let x (Just rhs) -> wfStatements (Let x Nothing:Assign (LVar x) rhs:rest)
     Assign (LVar x) rhs -> assertInScope x >> wfExpr rhs >> mRest
     Assign (LField obj _) rhs -> wfExpr obj >> wfExpr rhs >> mRest
+    Assign (LIndex e ind) rhs -> wfExpr e >> wfExpr ind >> wfExpr rhs >> mRest
     Eval e -> wfExpr e >> mRest
     Function f args body -> checkDups args >> inFunction (withVars (f:args) (wfStatements body)) >> withVar f mRest
     Return e -> do
