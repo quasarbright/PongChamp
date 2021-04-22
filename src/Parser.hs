@@ -48,7 +48,7 @@ pAccessArgs :: Parser AccessArgs
 pAccessArgs = choice
     [ Field <$> (symbol "." *> identifier)
     , Index <$> brackets pExpr
-    , Args <$> parens (many pExpr)
+    , Args <$> parens (pExpr `sepBy` symbol ",")
     ]
 
 applyAccessArgs :: Expr -> AccessArgs -> Expr
