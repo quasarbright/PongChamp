@@ -38,31 +38,29 @@ prefix  name op = Prefix $ do
     return $ \e -> Unop op e
 
 pUnop :: Parser Expr
-pUnop = makeExprParser pCall table
+pUnop = makeExprParser pCallAccess table
     where
         table = [[prefix "!" Not]]
 
-pCall :: Parser Expr
-pCall = do
-    f <- pAccessExpr
-    let pArgs = parens (pExpr `sepBy` symbol ",")
-    argss <- many pArgs
-    return $ foldl' Call f argss
+data AccessArgs = Field String | Index Expr | Args [Expr]
 
-data Access = Field String | Index Expr
+pAccessArgs :: Parser AccessArgs
+pAccessArgs = choice
+    [ Field <$> (symbol "." *> identifier)
+    , Index <$> brackets pExpr
+    , Args <$> parens (many pExpr)
+    ]
 
-pAccess :: Parser Access
-pAccess = Field <$> (symbol "." *> identifier) <|> Index <$> brackets pExpr
+applyAccessArgs :: Expr -> AccessArgs -> Expr
+applyAccessArgs e (Field x) = FieldAccess e x
+applyAccessArgs e (Index ind) = IndexAccess e ind
+applyAccessArgs e (Args args) = Call e args
 
-applyAccess :: Expr -> Access -> Expr
-applyAccess e (Field x) = FieldAccess e x
-applyAccess e (Index ind) = IndexAccess e ind
-
-pAccessExpr :: Parser Expr
-pAccessExpr = do
+pCallAccess :: Parser Expr
+pCallAccess = do
     e <- pAtomic
-    accesses <- many pAccess
-    return $ foldl' applyAccess e accesses
+    accesses <- many pAccessArgs
+    return $ foldl' applyAccessArgs e accesses
 
 pAtomic :: Parser Expr
 pAtomic = choice [pBool, pVar, pString, pNum, parens pExpr, pObjectLiteral, pArrayLiteral]
@@ -141,7 +139,7 @@ pFunction = do
 
 pLHS :: Parser LHS
 pLHS = do
-    e <- pAccessExpr
+    e <- pCallAccess
     case e of
         Var x -> return $ LVar x
         FieldAccess obj x -> return $ LField obj x
@@ -157,7 +155,7 @@ pAssign = do
     return $ Assign lhs rhs
 
 pEval :: Parser Statement
-pEval = Eval <$> pCall <* symbol ";"
+pEval = Eval <$> pCallAccess <* symbol ";"
 
 pReturn :: Parser Statement
 pReturn = do
