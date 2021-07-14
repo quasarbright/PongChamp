@@ -50,7 +50,7 @@ type Stack = Map Int Cell -- stack slot index -> Cell
 type Heap = Map Int Value -- pointer addr -> Value
 
 type Env = SymTable
-type Store = (Stack, Heap, Int, Int)
+type Store = (Stack, Heap, Int, Int, Int)
 
 data RuntimeError
     = UnboundVar String
@@ -237,7 +237,7 @@ initialize = do
     return $ Map.fromList env0
 
 getStack :: Interpreter Stack
-getStack = gets (\(s,_,_,_) -> s)
+getStack = gets (\(s,_,_,_,_) -> s)
 
 getsStack :: (Stack -> a) -> Interpreter a
 getsStack f = f <$> getStack
@@ -246,10 +246,10 @@ putStack :: Stack -> Interpreter ()
 putStack = modifyStack . const
 
 modifyStack :: (Stack -> Stack) -> Interpreter ()
-modifyStack f = modify $ \(s,a,b,c) -> (f s,a,b,c)
+modifyStack f = modify $ \(s,a,b,c,d) -> (f s,a,b,c,d)
 
 getHeap :: Interpreter Heap
-getHeap = gets (\(_,h,_,_) -> h)
+getHeap = gets (\(_,h,_,_,_) -> h)
 
 getsHeap :: (Heap -> a) -> Interpreter a
 getsHeap f = f <$> getHeap
@@ -258,22 +258,35 @@ putHeap :: Heap -> Interpreter ()
 putHeap = modifyHeap . const
 
 modifyHeap :: (Heap -> Heap) -> Interpreter ()
-modifyHeap f = modify $ \(a,h,b,c) -> (a,f h,b,c)
-
+modifyHeap f = modify $ \(a,h,b,c,d) -> (a,f h,b,c,d)
 
 -- | new heap address. increments next available address
 newAddr :: Interpreter Int
 newAddr = do
-    (s,h,si,hi) <- get
-    put (s,h,si,succ hi)
+    (s,h,si,hi,gsi) <- get
+    put (s,h,si,succ hi, gsi)
     return hi
 
 -- | newAddr but for the stack. Gets the next stack slot and increments next available
 newSlot :: Interpreter Int
 newSlot = do
-    (s,h,si,hi) <- get
-    put (s,h,succ si,hi)
+    (s,h,si,hi, gsi) <- get
+    put (s,h,succ si,hi, gsi)
     return si
+
+newGsi :: Interpreter Int
+newGsi = do
+    (a,b,c,d,gsi) <- get
+    put (a,b,c,d,succ gsi)
+    return gsi
+
+gensym :: Interpreter String
+gensym = gensymWith "gensym"
+
+gensymWith :: String -> Interpreter String
+gensymWith prefix = do
+    gsi <- newGsi
+    return ('$':prefix++show gsi)
 
 -- | put value on the heap and return the address of it
 malloc :: Value -> Interpreter Int
@@ -452,7 +465,7 @@ evalExpr = \case
                         _ -> throwError (TypeError "can't index an array with a non-integer value")
                 _ -> throwError (TypeError "can't index a non array")
             _ -> throwError (TypeError "can't index a non array")
-            
+
 
 runFunctionBody :: [Statement] -> Interpreter Cell
 runFunctionBody body = runStatements body >>= \case
@@ -466,6 +479,40 @@ mr >>! ma = do
     mr >>= \case
         Normal -> ma
         r -> return r
+
+-- for (let x of nums) {...}
+-- for (let i = 0; i < nums.length; i = i + 1;) {let x = nums[i]; ...}
+-- let i = 0; while(i < nums.length) {let x = nums[i]; ... i = i + 1;}
+
+
+-- for(let x of xs) {for(let y of ys) {print(y);} print(x)}
+{-
+for(let i = 0; i < xs.length; i++) {
+    let x = xs[i];
+    for(let i = 0; i < ys.length; i++) {
+        let y = ys[i];
+        print(y)
+    }
+    print(x)
+}
+
+let i = 0;
+while(i < xs.length) {
+    let x = xs[i];
+    let i 
+    i++;
+}
+-}
+
+forEachToFor :: String -> Expr -> [Statement] -> Interpreter Statement
+forEachToFor x iterable body = do
+    i <- gensymWith "forSym"
+    let initializer = Let i (Just (Number 0))
+        condition = Binop Lt (Var i) (FieldAccess iterable "length")
+        update = Assign (LVar i) (Binop Plus (Var i) (Number 1))
+        firstStmt = Let x (Just (IndexAccess iterable (Var i)))
+        forBody = firstStmt:body
+    return $ For initializer condition update forBody
 
 runStatements :: [Statement] -> Interpreter Result
 runStatements [] = return Normal
@@ -525,6 +572,10 @@ runStatements (s_:rest) =
                         Normal -> again
                 CBool False  -> mRest
                 _ -> throwError (TypeError "while expected bool")
+        For i c u b -> runStatements (forToWhile i c u b) >> mRest
+        Foreach x i b -> do
+            forStmt <- forEachToFor x i b
+            runStatements $ forStmt:rest
         Function f argnames body -> do
             env <- ask -- symtable
             fsi <- salloc CNone
@@ -543,7 +594,7 @@ runStatements (s_:rest) =
                         UserError err -> declareVar x (assignVar x err >> runStatements catchStmts)
                         err -> throwError err
             mtc >>! mRest
-            
+
 
 
 runProgram :: Program -> Interpreter Result
@@ -559,5 +610,5 @@ evalInterpreter m = mio
             env0 <- initialize
             local (const env0) m
         mrws = runInterpreter m'
-        me = fst <$> evalRWST mrws mempty (mempty, mempty, 0,0)
+        me = fst <$> evalRWST mrws mempty (mempty, mempty, 0,0,0)
         mio = runExceptT me

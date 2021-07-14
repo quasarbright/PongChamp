@@ -105,6 +105,8 @@ wfStatements (s_:rest) =
     let mRest = wfStatements rest
     in case s_ of
     While cond body -> wfExpr cond >> inLoop (wfStatements body) >> mRest
+    For initialize condition update body -> wfStatements (forToWhile initialize condition update body) >> mRest
+    Foreach x iterable body -> wfExpr iterable >> withVar x (inLoop (wfStatements body)) >> mRest
     If cond thn mEls -> wfExpr cond >> wfStatements (thn ++ els) >> mRest
         where els = fromMaybe [] mEls
     Let x Nothing -> withVar x mRest

@@ -47,7 +47,7 @@ pReservedOpWith :: Parser () -> String -> Parser ()
 pReservedOpWith sc' name = void . L.lexeme sc' $ (string name <* notFollowedBy opLetter)
 
 reservedWords :: [String]
-reservedWords = words "for if else while return function let break continue throw try catch"
+reservedWords = words "for if else while return function let break continue throw try catch of"
 
 --reservedOps :: [String]
 --reservedOps = words "+ - * & / ! || && | \" ' : ; % ^"

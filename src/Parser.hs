@@ -97,7 +97,7 @@ parseExpr = runParser pExpr ""
 -- statements --
 
 pStatement :: Parser Statement
-pStatement = choice [pWhile, pIf, pLet, pFunction, pReturn, pBreak, pContinue, pThrow, pTryCatch, try pAssign, pEval]
+pStatement = choice [pWhile, try pForeach, pFor, pIf, pLet, pFunction, pReturn, pBreak, pContinue, pThrow, pTryCatch, try pAssign, pEval]
 
 pBlock :: Parser [Statement]
 pBlock = braces (many pStatement) <|> fmap pure pStatement
@@ -108,6 +108,30 @@ pWhile = do
     cond <- parens pExpr
     body <- pBlock
     return $ While cond body
+
+pFor :: Parser Statement
+pFor = do
+    pKeyword "for"
+    symbol "("
+    initialize <- pStatement
+    condition <- pExpr
+    symbol ";"
+    update <- pStatement
+    symbol ")"
+    body <- pBlock
+    return $ For initialize condition update body
+
+pForeach :: Parser Statement
+pForeach = do
+    pKeyword "for"
+    symbol "("
+    pKeyword "let"
+    x <- identifier
+    pKeyword "of"
+    iterable <- pExpr
+    symbol ")"
+    body <- pBlock
+    return $ Foreach x iterable body    
 
 pIf :: Parser Statement
 pIf = do

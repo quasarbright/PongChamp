@@ -15,6 +15,8 @@ type RHS = Expr -- @ ryan
 
 data Statement
     = While Expr [Statement]
+    | For Statement Expr Statement [Statement] -- for (let x = 1; x < 10; x = x + 1) { print(x); }
+    | Foreach String Expr [Statement] -- for (let x of [1,2,3]) { print(x); }
     | If Expr [Statement] (Maybe [Statement])
     | Let String (Maybe Expr)
     | Assign LHS Expr
@@ -88,6 +90,8 @@ instance FreeVars [Statement] where
                 Function f args _ -> [f] <>. args 
                 Assign{} -> []
                 While{} -> []
+                For{} -> []
+                Foreach{} -> []
                 If{} -> []
                 Eval{} -> []
                 Return{} -> []
@@ -103,9 +107,17 @@ instance FreeVars LHS where
         LField obj _ -> freeVars obj
         LIndex e ind -> freeVars [e,ind]
 
+-- for(let x; x && y; ;) { print(y); print(x); }
+
+forToWhile :: Statement -> Expr -> Statement -> [Statement] -> [Statement]
+forToWhile initialize condition update body = [initialize, While condition (body ++ [update])]
+
+-- what variables are free in this particular statement
 instance FreeVars Statement where
     freeVars = \case
         While e body -> freeVars e <>. freeVars body
+        For initialize condition update body -> freeVars (forToWhile initialize condition update body)
+        Foreach x iterable body -> freeVars iterable <>. withouts [x] (freeVars body)
         If e thn mEls -> freeVars e <>. freeVars thn <>. freeVars mEls
         Let _ mRhs -> freeVars mRhs
         Assign lhs rhs -> freeVars lhs <>. freeVars rhs
